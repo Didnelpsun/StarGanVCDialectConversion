@@ -1,3 +1,4 @@
+# 该文件调用模型进行训练测试等操作
 import os
 import time
 from datetime import datetime, timedelta
@@ -21,20 +22,24 @@ import ast
 
 
 class Solver(object):
-    """docstring for Solver."""
+    """训练操作的说明"""
+    #  参数为数据加载器与配置
     def __init__(self, data_loader, config):
-        
+        # 进行赋值
         self.config = config
         self.data_loader = data_loader
-        # Model configurations.
-        
+        # 模型配置
+        # 赋值三个损失函数，循环损失，域分类损失，身份映射损失
         self.lambda_cycle = config.lambda_cycle
         self.lambda_cls = config.lambda_cls
         self.lambda_identity = config.lambda_identity
 
-        # Training configurations.
+        # 训练配置
+        # 数据文件路由
         self.data_dir = config.data_dir
+        # 测试文件路由
         self.test_dir = config.test_dir
+        # 批处理大小
         self.batch_size = config.batch_size
         self.num_iters = config.num_iters
         self.num_iters_decay = config.num_iters_decay
@@ -47,14 +52,21 @@ class Solver(object):
         self.resume_iters = config.resume_iters
         
 
-        # Test configurations.
+        # 测试配置
         self.test_iters = config.test_iters
+        # ast.literal_eval为解析函数，并安全地进行类型转换
+        # 目标发音者
         self.trg_speaker = ast.literal_eval(config.trg_speaker)
+        # 源发音者
         self.src_speaker = config.src_speaker
 
-        # Miscellaneous.
+        # 其他配置
+        # 是否使用tensorboard记录
         self.use_tensorboard = config.use_tensorboard
+        # torch.device代表将torch.Tensor分配到的设备的对象。torch.device包含一个设备类型（‘cpu’或‘cuda’）和可选的设备序号。
+        # 是使用cuda还是cpu计算
         self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+        # 将
         self.spk_enc = LabelBinarizer().fit(speakers)
         # Directories.
         self.log_dir = config.log_dir
@@ -393,6 +405,6 @@ class Solver(object):
 
 
     
-
+# 如果执行模式为main就跳过这个文件
 if __name__ == '__main__':
     pass

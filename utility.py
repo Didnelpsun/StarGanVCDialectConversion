@@ -1,4 +1,5 @@
-# 该文件为项目专门的工具类
+# 该文件为项目专门的工具类，主要是提供计算方程与解析格式化文件
+# npy格式文件是numpy专用的保存数组的二进制文件，npz是对应的压缩文件
 import numpy as np
 import pyworld as pw
 import os, shutil
@@ -26,7 +27,7 @@ class Singleton(type):
 
 
 class CommonInfo(metaclass=Singleton):
-    """一般信息的文档字符串化"""
+    """一般信息的的说明"""
 
     # 类初始化方法，参数为数据文件路径
     def __init__(self, datadir: str):
@@ -221,26 +222,34 @@ class GenerateStatistics(object):
             print(f'coded_sps_mean:{coded_sps_mean.shape}  coded_sps_std:{coded_sps_std.shape}')
             # 将文件名命名为etc文件夹名/one_speaker变量值-stats.npz
             filename = os.path.join(etc_path, f'{one_speaker}-stats.npz')
+            # np.savez保存数组到一个二进制的文件中,但是厉害的是,它可以保存多个数组到同一个文件中,保存格式是.npz,
+            # 其实就是多个前面np.save的保存的npy,再通过打包(未压缩)的方式把这些文件归到一个文件上
             np.savez(filename,
                      log_f0s_mean=log_f0s_mean, log_f0s_std=log_f0s_std,
                      coded_sps_mean=coded_sps_mean, coded_sps_std=coded_sps_std)
-
             print(f'[save]: {filename}')
 
     def normalize_dataset(self):
-        '''normalize dataset run once!'''
+        """运行一次规范化数据集"""
         norm = Normalizer()
+        # 寻找npy数据集文件
         files = librosa.util.find_files(self.folder, ext='npy')
-
+        # 遍历文件
         for p in files:
+            # 截取文件名
             filename = os.path.basename(p)
+            # 根据文件命名方式获取speaker名
             speaker = filename.split(sep='_', maxsplit=1)[0]
             mcep = np.load(p)
+            # 调用自定义方法对于mcep文件进行计算
             mcep_normed = norm.forward_process(mcep, speaker)
+            # os.remove用于删除指定文件
             os.remove(p)
+            # 将格式化好的数据放入原来路径中
             np.save(p, mcep_normed)
             print(f'[normalize]:{p}')
 
 
+# 当调用形式为调用main，就跳过这个文件
 if __name__ == "__main__":
     pass

@@ -22,8 +22,7 @@ from sklearn.preprocessing import LabelBinarizer
 from torch.utils.data.dataloader import DataLoader
 from torch.utils.data.dataset import Dataset
 
-# 从预处理库中进入对应的音频预处理对象，FEATURE_DIM为特征维，FFTSIZE为傅里叶变换大小，用于将数据转换为音频数据
-# FRAMES采样点数，SAMPLE_RATE为采样率
+# 从预处理库中进入对应的音频预处理对象，用于将数据转换为音频数据
 from preprocess import (FEATURE_DIM, FFTSIZE, FRAMES, SAMPLE_RATE, world_features)
 # utility为个人定义工具集库，Normalizer为归一化对象，speakers为发音者对象，处理不同发音人
 from utility import Normalizer, speakers
@@ -33,7 +32,7 @@ import random
 
 # 构建音频数据集，将数据集输入转换为音频数据集
 class AudioDataset(Dataset):
-    """对音频数据集的文档字符串化"""
+    """对音频数据集的的说明"""
 
     # 初始化音频数据，datadir为数据集文件路由
     # 并定义音频数据集对象所拥有的方法与属性
@@ -98,7 +97,7 @@ def data_loader(datadir: str, batch_size=4, shuffle=True, mode='train', num_work
 
 
 class TestSet(object):
-    """对于测试数据的文档字符串化"""
+    """对于测试数据的的说明"""
 
     def __init__(self, datadir: str):
         super(TestSet, self).__init__()
