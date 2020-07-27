@@ -74,6 +74,9 @@ def load_wavs(dataset: str, sr):
             # 因为音频采样率不被使用，所以以_作为变量名占位保存
             # mono=True将信号转换为单声道
             wav, _ = librosa.load(one_file, sr=sr, mono=True, dtype=np.float64)
+            # librosa.effects.trim从音频信号中消除前导和尾随的静音
+            # top_db参数为低于参考值的阈值（分贝）视为静音
+            # 返回值为两个，第一个是被切割的信号数据，格式为np.ndarray，形状为(m,)或者(2, m)
             y, _ = librosa.effects.trim(wav, top_db=15)
             wav = np.append(y[0], y[1:] - 0.97 * y[:-1])
 

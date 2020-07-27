@@ -159,7 +159,7 @@ class Discriminator(nn.Module):
 
 # 域分类器模型
 class DomainClassifier(nn.Module):
-    """docstring for DomainClassifier."""
+    """域分类器说明"""
 
     def __init__(self):
         super(DomainClassifier, self).__init__()
