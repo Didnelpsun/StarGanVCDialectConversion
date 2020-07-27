@@ -324,10 +324,14 @@ class Solver(object):
                         # 添加到log中
                         self.logger.scalar_summary(tag, value, i+1)
 
-            # Translate fixed images for debugging.
+            # 翻译固定数据进行调试
             if (i+1) % self.sample_step == 0:
+                # torch.no_grad是一个上下文管理器，被该语句 wrap 起来的部分将不会track 梯度
+                # 所有依赖他的tensor会全部变成True，反向传播时就不会自动求导了，反向传播就不会保存梯度，因此大大节约了显存或者说内存。
                 with torch.no_grad():
+                    # 调用自定义方法，定义一个路由，并随机选取一个发音者作为测试数据
                     d, speaker = TestSet(self.test_dir).test_data()
+                    # random.choice返回参数的随机项
                     target = random.choice([x for x in speakers if x != speaker])
                     label_t = self.spk_enc.transform([target])[0]
                     label_t = np.asarray([label_t])
