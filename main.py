@@ -1,3 +1,4 @@
+# 主文件，串联其整个项目
 import os
 import argparse
 from solver import Solver
@@ -10,10 +11,10 @@ def str2bool(v):
 
 
 def main(config):
-    # For fast training.
+    # 目的是为了快速训练
     cudnn.benchmark = True
 
-    # Create directories if not exist.
+    # 如果目录不存在就创建目录
     if not os.path.exists(config.log_dir):
         os.makedirs(config.log_dir)
     if not os.path.exists(config.model_save_dir):
@@ -23,11 +24,11 @@ def main(config):
     if not os.path.exists(config.result_dir):
         os.makedirs(config.result_dir)
 
-    # Data loader.
+    # 数据加载器
     
     dloader = data_loader(config.data_dir, batch_size=config.batch_size, mode=config.mode,num_workers=config.num_workers)
 
-    # Solver for training and testing StarGAN.
+    # 为训练和测试StarGAN的Solver类
     solver = Solver(dloader, config)
 
     if config.mode == 'train':
@@ -41,14 +42,14 @@ def main(config):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
-    # Model configuration.
+    # 模型配置
 
     parser.add_argument('--lambda_cycle', type=float, default=3, help='weight for cycle loss')
     parser.add_argument('--lambda_cls', type=float, default=2, help='weight for domain classification loss')
     
     parser.add_argument('--lambda_identity', type=float, default=2, help='weight for identity loss')
     
-    # Training configuration.
+    # 训练配置
     
     parser.add_argument('--batch_size', type=int, default=4, help='mini-batch size')
     parser.add_argument('--num_iters', type=int, default=200000, help='number of total iterations for training D')
@@ -63,17 +64,17 @@ if __name__ == '__main__':
     
     
 
-    # Test configuration.
+    # 测试配置
     parser.add_argument('--test_iters', type=int, default=200000, help='test model from this step')
     parser.add_argument('--src_speaker', type=str, default=None, help='test model source speaker')
     parser.add_argument('--trg_speaker', type=str, default="['SF1', 'TM1']", help='string list repre of target speakers eg."[a,b]"')
 
-    # Miscellaneous.
+    # 其他配置
     parser.add_argument('--num_workers', type=int, default=4)
     parser.add_argument('--mode', type=str, default='train', choices=['train', 'test'])
     parser.add_argument('--use_tensorboard', type=str2bool, default=True)
 
-    # Directories.
+    # 目录
     parser.add_argument('--data_dir', type=str, default='data/processed')
     parser.add_argument('--test_dir', type=str, default='data/speakers_test')
     parser.add_argument('--log_dir', type=str, default='starganvc/logs')
@@ -81,7 +82,7 @@ if __name__ == '__main__':
     parser.add_argument('--sample_dir', type=str, default='starganvc/samples')
     parser.add_argument('--result_dir', type=str, default='starganvc/results')
     
-    # Step size.
+    # 步长
     parser.add_argument('--log_step', type=int, default=10)
     parser.add_argument('--sample_step', type=int, default=2000)
     parser.add_argument('--model_save_step', type=int, default=10000)

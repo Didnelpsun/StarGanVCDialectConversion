@@ -332,13 +332,18 @@ class Solver(object):
                     # 调用自定义方法，定义一个路由，并随机选取一个发音者作为测试数据
                     d, speaker = TestSet(self.test_dir).test_data()
                     # random.choice返回参数的随机项
+                    # 随机在speakers中选择一个不是目标的发音者
                     target = random.choice([x for x in speakers if x != speaker])
+                    # 将二值化的标签组取出第一个作为目标
+                    # LabelBinary.transfrom方法将复杂类标签转换为二进制标签
                     label_t = self.spk_enc.transform([target])[0]
+                    # np.asarray将python原生列表或元组形式的现有数据来创建numpy数组
                     label_t = np.asarray([label_t])
-
+                    # 取出字典中的文件名与内容
                     for filename, content in d.items():
                         f0 = content['f0']
                         ap = content['ap']
+                        # 调用自定义方法处理对应的数据
                         sp_norm_pad = self.pad_coded_sp(content['coded_sp_norm'])
                         
                         convert_result = []
@@ -367,7 +372,7 @@ class Solver(object):
                         print(f'[save]:{path}')
                         librosa.output.write_wav(path, wav, SAMPLE_RATE)
                         
-            # Save model checkpoints.
+            # 保存模型检查点
             if (i+1) % self.model_save_step == 0:
                 G_path = os.path.join(self.model_save_dir, '{}-G.ckpt'.format(i+1))
                 D_path = os.path.join(self.model_save_dir, '{}-D.ckpt'.format(i+1))
@@ -377,7 +382,7 @@ class Solver(object):
                 torch.save(self.C.state_dict(), C_path)
                 print('Saved model checkpoints into {}...'.format(self.model_save_dir))
 
-            # Decay learning rates.
+            # 衰减学习率
             if (i+1) % self.lr_update_step == 0 and (i+1) > (self.num_iters - self.num_iters_decay):
                 g_lr -= (self.g_lr / float(self.num_iters_decay))
                 d_lr -= (self.d_lr / float(self.num_iters_decay))
@@ -386,7 +391,7 @@ class Solver(object):
                 print ('Decayed learning rates, g_lr: {}, d_lr: {}.'.format(g_lr, d_lr))
 
     def gradient_penalty(self, y, x):
-        """Compute gradient penalty: (L2_norm(dy/dx) - 1)**2."""
+        """计算梯度惩罚: (L2_norm(dy/dx) - 1)**2."""
         weight = torch.ones(y.size()).to(self.device)
         dydx = torch.autograd.grad(outputs=y,
                                    inputs=x,
@@ -406,7 +411,7 @@ class Solver(object):
         self.c_optimizer.zero_grad()
 
     def restore_model(self, resume_iters):
-        """Restore the trained generator and discriminator."""
+        """重置训练好的发生器和鉴别器"""
         print('Loading the trained models from step {}...'.format(resume_iters))
         G_path = os.path.join(self.model_save_dir, '{}-G.ckpt'.format(resume_iters))
         D_path = os.path.join(self.model_save_dir, '{}-D.ckpt'.format(resume_iters))
@@ -427,12 +432,12 @@ class Solver(object):
         return sp_norm_pad 
 
     def test(self):
-        """Translate speech using StarGAN ."""
-        # Load the trained generator.
+        """用StarGAN处理音频数据"""
+        # 加载训练生成器
         self.restore_model(self.test_iters)
         norm = Normalizer()
 
-        # Set data loader.
+        # 设置数据加载器
         d, speaker = TestSet(self.test_dir).test_data(self.src_speaker)
         targets = self.trg_speaker
        

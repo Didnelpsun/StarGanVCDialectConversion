@@ -90,13 +90,13 @@ def load_wavs(dataset: str, sr):
 
 
 def chunks(iterable, size):
-    """Yield successive n-sized chunks from iterable."""
+    """从迭代器中生成连续的n大小的数据块"""
     for i in range(0, len(iterable), size):
         yield iterable[i:i + size]
 
 
 def wav_to_mcep_file(dataset: str, sr=SAMPLE_RATE, processed_filepath: str = './data/processed'):
-    '''convert wavs to mcep feature using image repr'''
+    '''用生成器将wavs转换带有特征的数据'''
     shutil.rmtree(processed_filepath)
     os.makedirs(processed_filepath, exist_ok=True)
 
@@ -108,22 +108,22 @@ def wav_to_mcep_file(dataset: str, sr=SAMPLE_RATE, processed_filepath: str = './
         values_of_one_speaker = list(d[one_speaker].values())
 
         for index, one_chunk in enumerate(chunks(values_of_one_speaker, CHUNK_SIZE)):
-            wav_concated = []  # preserve one batch of wavs
+            wav_concated = []  # 保存一个批次的wavs数据
             temp = one_chunk.copy()
 
-            # concate wavs
+            # 连接wavs数据
             for one in temp:
                 wav_concated.extend(one)
             wav_concated = np.array(wav_concated)
 
-            # process one batch of wavs
+            # 处理一个批次的wavs数据
             f0, ap, sp, coded_sp = cal_mcep(wav_concated, sr=sr, dim=FEATURE_DIM)
             newname = f'{one_speaker}_{index}'
             file_path_z = os.path.join(processed_filepath, newname)
             np.savez(file_path_z, f0=f0, coded_sp=coded_sp)
             print(f'[save]: {file_path_z}')
 
-            # split mcep t0 muliti files
+            # 拆分t0媒体文件
             for start_idx in range(0, coded_sp.shape[1] - FRAMES + 1, FRAMES):
                 one_audio_seg = coded_sp[:, start_idx: start_idx + FRAMES]
 
@@ -145,8 +145,8 @@ def world_features(wav, sr, fft_size, dim):
 
 
 def cal_mcep(wav, sr=SAMPLE_RATE, dim=FEATURE_DIM, fft_size=FFTSIZE):
-    '''cal mcep given wav singnal
-        the frame_period used only for pad_wav_to_get_fixed_frames
+    '''cal mecp给出wav信号
+    帧周期只被用于pad_wav_to_get_fixed_frames
     '''
     f0, timeaxis, sp, ap, coded_sp = world_features(wav, sr, fft_size, dim)
     coded_sp = coded_sp.T  # dim x n
@@ -174,8 +174,8 @@ if __name__ == "__main__":
 
     wav_to_mcep_file(input_dir, SAMPLE_RATE, processed_filepath=output_dir)
 
-    # input_dir is train dataset. we need to calculate and save the speech\
-    # statistical characteristics for each speaker.
+    # 输入文件夹是训练数据，我们需要计算并保存对应的音频数据
+    # 为每个发音者统计特征
     generator = GenerateStatistics(output_dir)
     generator.generate_stats()
     generator.normalize_dataset()
