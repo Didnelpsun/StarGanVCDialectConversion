@@ -1,4 +1,7 @@
+# 此文件用来下载对应的数据文件，主要是vcc2016和evaluation_all文件
+# os库是Python标准库，包含几百个函数,常用路径操作、进程管理、环境参数等几类。os.path子库以path为入口，用于操作和处理文件路径。
 import os
+# random为随机数库，用来生成随机数
 import random
 from urllib.request import urlretrieve
 import zipfile

@@ -16,9 +16,9 @@ from sklearn.preprocessing import LabelBinarizer
 # 并利用多进程来加速batch data的处理，使用yield来使用有限的内存
 
 # pytorch的数据加载到模型的操作顺序是这样的：
-# ① 创建一个 Dataset 对象
-# ② 创建一个 DataLoader 对象
-# ③ 循环这个 DataLoader 对象，将img, label加载到模型中进行训练
+# ① 创建一个Dataset对象
+# ② 创建一个DataLoader对象
+# ③ 循环这个DataLoader对象，将img, label加载到模型中进行训练
 from torch.utils.data.dataloader import DataLoader
 from torch.utils.data.dataset import Dataset
 
