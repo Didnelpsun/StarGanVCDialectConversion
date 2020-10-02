@@ -1,10 +1,17 @@
 # 此文件用来下载对应的数据文件，主要是vcc2016和evaluation_all文件
 # os库是Python标准库，包含几百个函数,常用路径操作、进程管理、环境参数等几类。os.path子库以path为入口，用于操作和处理文件路径。
 import os
-# random为随机数库，用来生成随机数
-import random
-from urllib.request import urlretrieve
-import zipfile
+# import random
+# urllib库
+
+# urlretrieve() 方法直接将远程数据下载到本地。
+# 这个函数可以方便的将网页上的一个文件保存到本地。文件类型可以是网页的html文件、图片、视频等媒体文件。
+# 函数原型：urlretrieve(url, filename=None, reporthook=None, data=None)
+# 参数 url 指定了要下载的文件的url
+# 参数 finename 指定了保存本地路径（如果参数未指定，urllib会生成一个临时文件保存数据。）
+# 参数 reporthook 是一个回调函数，当连接上服务器、以及相应的数据块传输完毕时会触发该回调，我们可以利用这个回调函数来显示当前的下载进度。
+# 参数 data 指 post 到服务器的数据，该方法返回一个包含两个元素的(filename, headers)元组，filename 表示保存到本地的路径，header 表示服务器的响应头。
+# from urllib.request import urlretrieve
 import argparse
 # shlex类使得为类似于unixshell的简单语法编写词法分析器变得很容易。
 # 这对于编写小型语言（例如，Python应用程序的运行控制文件）或解析引用的字符串通常很有用。
