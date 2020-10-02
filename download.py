@@ -73,8 +73,10 @@ def create_dirs(trainset: str = './data/fourspeakers', testset: str = './data/fo
 
 # 当以main方式运行时
 if __name__ == '__main__':
-    # 定义一个命令行操作对象，包含将命令行解析成Python数据类型所需的全部信息。
 
+    # 定义一个命令行操作对象parse，调用argparse包的ArgumentParser构造函数。
+
+    # 构造函数中的参数有：
     # prog - 程序的名称（默认：sys.argv[0]）
     # usage - 描述程序用途的字符串（默认值：从添加到解析器的参数生成）
     # description - 在参数帮助文档之前显示的文本（默认值：无）
@@ -87,21 +89,26 @@ if __name__ == '__main__':
     # conflict_handler - 解决冲突选项的策略（通常是不必要的）
     # add_help - 为解析器添加一个 -h/–help 选项（默认值： True）
     # allow_abbrev - 如果缩写是无歧义的，则允许缩写长选项 （默认值：True）
-
     parser = argparse.ArgumentParser(description='Download  voice conversion datasets.')
-    # 定义对应的数据集路由
-    datasets_default = 'vcc2016'
-    train_dir = './data/fourspeakers'
-    test_dir = './data/fourspeakers_test'
-    # 调用add方法给命令行对象增加命令参数，即输入对应命令就跳到不同指令处理程序
 
-    # name or flags - 一个命名或者一个选项字符串的列表，例如 foo 或 -f, --foo。
+    # 定义对应的数据集路由
+    # 默认路由
+    datasets_default = 'vcc2016'
+    # 训练集路由
+    train_dir = './data/fourspeakers'
+    # 测试集路由
+    test_dir = './data/fourspeakers_test'
+
+    # 调用add_argument方法给命令行对象增加命令参数，即输入对应命令就跳到不同指令处理程序。默认为python/python3 download.py
+
+    # name or flags - 一个命名或者一个选项字符串的列表，这是第一个参数，可以直接添加而不用指明名称，例如 foo 或 -f, --foo。
+    # 如果两个及以上可选参数而同一种处理方式，直接加上所有的参数，如：'--v','--version'。
     # action - 当参数在命令行中出现时使用的动作基本类型。
     # nargs - 命令行参数应当消耗的数目。
     # const - 被一些 action 和 nargs 选择所需求的常数。
     # default - 当参数未在命令行中出现时使用的值。
     # type - 命令行参数应当被转换成的类型。
-    # choices - 可用的参数的容器。
+    # choices - 可用的参数的值域。
     # required - 此命令行选项是否可省略 （仅选项可用）。
     # help - 一个此选项作用的简单描述。
     # metavar - 在使用方法消息中使用的参数值示例。
@@ -110,8 +117,10 @@ if __name__ == '__main__':
     parser.add_argument('--datasets', type=str, help='Datasets available: vcc2016', default=datasets_default)
     parser.add_argument('--train_dir', type=str, help='trainset directory', default=train_dir)
     parser.add_argument('--test_dir', type=str, help='testset directory', default=test_dir)
-    # 解析参数并把结果赋值给argv
+
+    # parse_args方法解析参数并把结果赋值给argv
     argv = parser.parse_args()
+
     # 得到对应的输入数据集值
     datasets = argv.datasets
     # 并创建对应的训练集与测试集文件夹
