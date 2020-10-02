@@ -1,8 +1,10 @@
 # 该文件为项目专门的工具类，主要是提供计算方程与解析格式化文件
+
 # npy格式文件是numpy专用的保存数组的二进制文件，npz是对应的压缩文件
 import numpy as np
-import pyworld as pw
-import os, shutil
+
+import os
+
 # glob为python标准库之一，可根据 Unix 终端所用规则找出所有匹配特定模式的路径名，但会按不确定的顺序返回结果
 import glob
 import librosa

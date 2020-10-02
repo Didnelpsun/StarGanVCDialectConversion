@@ -1,14 +1,13 @@
 # 这个文件主要负责的是预处理数据
-import librosa
-import numpy as np
-import os
+
 # pyworld是一个操作WORLD开源软件的包，主要进行语音操作与合成
 import pyworld
-import pyworld as pw
-import glob
+
 from utility import *
+
 # argparse是python专门的命令行操作包
 import argparse
+
 from datetime import datetime
 
 # 定义常量

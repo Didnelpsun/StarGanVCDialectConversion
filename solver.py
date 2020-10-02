@@ -1,14 +1,13 @@
 # 该文件调用模型进行训练测试等操作
+
 import os
-import time
-from datetime import datetime, timedelta
+
+from datetime import datetime
 
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.autograd import Variable
-from torchvision.utils import save_image
 
 from data_loader import TestSet
 from model import Discriminator, DomainClassifier, Generator

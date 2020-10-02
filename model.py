@@ -1,11 +1,8 @@
 # 该文件为模型文件，主要是构建神经网络模型
+
 import torch
 # torch.nn为一个神经网络构建工具箱
 import torch.nn as nn
-import torch.nn.functional as F
-import numpy as np
-from data_loader import data_loader
-from utility import speakers
 
 
 # 自定义模型需要继承nn.Module来实现
@@ -77,7 +74,7 @@ class Generator(nn.Module):
         self.up4 = Up2d(68, 32, (4, 8), (2, 2), (1, 3))
         # 再定义一些反卷积二维样本
         self.deconv = nn.ConvTranspose2d(36, 1, (3, 9), (1, 1), (1, 4))
-3
+
     def forward(self, x, c):
         # 将x传入downsample方法将x加入对应的Sequential容器
         x = self.downsample(x)
@@ -108,6 +105,7 @@ class Generator(nn.Module):
         x = torch.cat([x, c5], dim=1)
         x = self.deconv(x)
         return x
+
 
 
 # 判别器模型
