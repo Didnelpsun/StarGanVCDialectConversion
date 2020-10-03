@@ -71,7 +71,7 @@ class CommonInfo(metaclass=Singleton):
         return all_speaker
 
 
-# 调用CommonInfo方法将数据地址传入，调用speakers属性获取对应标签组方法
+# 调用CommonInfo构造方法将数据地址传入，调用speakers属性获取对应标签组方法
 speakers = CommonInfo('data/speakers').speakers
 
 
