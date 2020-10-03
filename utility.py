@@ -5,34 +5,42 @@ import numpy as np
 
 import os
 
-# glob为python标准库之一，可根据 Unix 终端所用规则找出所有匹配特定模式的路径名，但会按不确定的顺序返回结果
+# glob为python标准库之一，可根据Unix终端所用规则找出所有匹配特定模式的路径名，但会按不确定的顺序返回结果，主要用于文件查找
 import glob
+# librosa主要用于语音处理
 import librosa
 
 
+# 设置单例类
 class Singleton(type):
+    # __init__为对象初始化方法
     # args参数为一个任意元素个数的元组，kwargs为一个任意元素个数的字典
     def __init__(self, *args, **kwargs):
         # 设置对象的__instance属性为空，这个属性代表对象的实例
         self.__instance = None
         super().__init__(*args, **kwargs)
 
+    # __call__使实例能够像函数一样被调用，同时不影响实例本身的生命周期（__call__()不影响一个实例的构造和析构）。
+    # 但是__call__()可以用来改变实例的内部成员的值。
     # 赋值方法
     def __call__(self, *args, **kwargs):
         # 如果对象的实例属性为空，则调用方法构造实例属性
         if self.__instance is None:
             self.__instance = super().__call__(*args, **kwargs)
             return self.__instance
-        # 否就直接返回
+        # 否就直接返回而不会再新建一个实例
         else:
             return self.__instance
 
 
+# 普通信息类，参数表明使用元类创建单例模式
 class CommonInfo(metaclass=Singleton):
     """一般信息的的说明"""
 
     # 类初始化方法，参数为数据文件路径
     def __init__(self, datadir: str):
+        # super的第一个参数为本身类名，第二个参数为self
+        # 调用super父类的初始化方法
         super(CommonInfo, self).__init__()
         self.datadir = datadir
 
@@ -43,12 +51,20 @@ class CommonInfo(metaclass=Singleton):
         """ 返回发音者组作为训练源
         如 ['SF2', 'TM1', 'SF1', 'TM2']
         """
-        # 将数据路径后加上*
+        # os.path.join连接两个或更多的路径名组件，如果各组件名首字母不包含’/’，则函数会自动加上
+        # 如果有一个组件是一个绝对路径，则在它之前的所有组件均会被舍弃
+        # 如果最后一个组件为空，则生成的路径以一个’/’分隔符结尾
+        # 这里会将数据路径后加上*
         p = os.path.join(self.datadir, "*")
+
+        # glob.glob匹配所有的符合条件的文件，并将其以list的形式返回
         # 调用glob.glob方法查询该目录下的所有文件，*代表匹配全部
         all_sub_folder = glob.glob(p)
-        # 使用rsplit方法将获取的文件集通过指定分隔符从最后开始对字符串进行分割并返回一个列表，maxsplit为仅切分一次，并取第二个部分
+
+        # 使用rsplit方法将获取的文件集通过指定分隔符从最后开始对字符串进行分割并返回一个列表
+        # maxsplit=1为仅切分一次，并取第二个部分
         # 如../marry/v1文件，就被分为../marry/和v1两个部分，[1]就是取v1这个部分
+        # 使用列表生成式保存为列表，对文件夹中所有的
         all_speaker = [s.rsplit('/', maxsplit=1)[1] for s in all_sub_folder]
         # 将标签组重新排序
         all_speaker.sort()

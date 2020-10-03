@@ -3,6 +3,7 @@
 # pyworld是一个操作WORLD开源软件的包，主要进行语音操作与合成
 import pyworld
 
+# 导入自定义的utility包
 from utility import *
 
 # argparse是python专门的命令行操作包
