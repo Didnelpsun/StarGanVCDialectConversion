@@ -12,6 +12,7 @@ from utility import *
 # argparse是python专门的命令行操作包
 import argparse
 
+# datetime为时间日期处理模块
 from datetime import datetime
 
 # 定义常量
@@ -23,11 +24,11 @@ SAMPLE_RATE = 16000
 FRAMES = 512
 # 傅里叶变换大小
 FFTSIZE = 1024
-# 发音者个数
+# 发音者个数，这里直接对utility导入的speakers值求长度
 SPEAKERS_NUM = len(speakers)
 # 数据块大小
 CHUNK_SIZE = 1  # 将块大小的音频剪辑合并在一起
-# 定义ε
+# 定义ε参数
 EPSILON = 1e-10
 MODEL_NAME = 'starganvc_model'
 
@@ -39,6 +40,7 @@ def load_wavs(dataset: str, sr):
     特别是包含所有wav格式的文件
     """
     data = {}
+    # os.scandir获取当前工作文件夹内的文件夹或文件
     # 扫描数据集对应路由，并将扫描结果取别名为it
     with os.scandir(dataset) as it:
         # 遍历扫描数组结果
@@ -124,7 +126,7 @@ def wav_to_mcep_file(dataset: str, sr=SAMPLE_RATE, processed_filepath: str = './
             newname = f'{one_speaker}_{index}'
             file_path_z = os.path.join(processed_filepath, newname)
             np.savez(file_path_z, f0=f0, coded_sp=coded_sp)
-            print(f'[save]: {file_path_z}')
+            print(f'[保存]: {file_path_z}')
 
             # 拆分t0媒体文件
             for start_idx in range(0, coded_sp.shape[1] - FRAMES + 1, FRAMES):
@@ -135,7 +137,7 @@ def wav_to_mcep_file(dataset: str, sr=SAMPLE_RATE, processed_filepath: str = './
                     filePath = os.path.join(processed_filepath, temp_name)
 
                     np.save(filePath, one_audio_seg)
-                    print(f'[save]: {filePath}.npy')
+                    print(f'[保存]: {filePath}.npy')
 
 
 def world_features(wav, sr, fft_size, dim):
@@ -158,21 +160,23 @@ def cal_mcep(wav, sr=SAMPLE_RATE, dim=FEATURE_DIM, fft_size=FFTSIZE):
 
 
 if __name__ == "__main__":
+    # 首先使用datetime.now()获取当前的时间
     start = datetime.now()
-    parser = argparse.ArgumentParser(description='Convert the wav waveform to mel-cepstral coefficients(MCCs)\
-    and calculate the speech statistical characteristics')
-
+    # 定义一个命令行对象，并添加这个命令行对象的描述
+    parser = argparse.ArgumentParser(description='将wav格式文件波形转换为梅尔倒谱系数（MCCs），并计算语音统计特征')
+    # 定义输入数据的目录
     input_dir = './data/speakers'
+    # 定义处理后的输出的数据目录
     output_dir = './data/processed'
-
-    parser.add_argument('--input_dir', type=str, help='the direcotry contains data need to be processed',
+    # 如果需要可以定义输入和输出目录
+    parser.add_argument('--input_dir', type=str, help='这个目录包含需要处理的数据',
                         default=input_dir)
-    parser.add_argument('--output_dir', type=str, help='the directory stores the processed data', default=output_dir)
-
+    parser.add_argument('--output_dir', type=str, help='这个目录存储处理过的数据', default=output_dir)
+    # 获取对应的输入输出参数
     argv = parser.parse_args()
     input_dir = argv.input_dir
     output_dir = argv.output_dir
-
+    # 新建输出目录，如果存在不会报错
     os.makedirs(output_dir, exist_ok=True)
 
     wav_to_mcep_file(input_dir, SAMPLE_RATE, processed_filepath=output_dir)
@@ -183,4 +187,4 @@ if __name__ == "__main__":
     generator.generate_stats()
     generator.normalize_dataset()
     end = datetime.now()
-    print(f"[Runing Time]: {end - start}")
+    print(f"[程序运行时间]: {end - start}")

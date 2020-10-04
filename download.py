@@ -32,7 +32,7 @@ def unzip(zip_filepath, dest_dir='./data'):
         # pwd是用于解密文件的密码。
         # 这里将zip_filepath路径的文件放入dest_dir路径中
         zf.extractall(dest_dir)
-    print("Extraction complete!")
+    print("解压对应文件已完成！")
 
 
 # 用于下载vcc2016数据集
@@ -44,7 +44,7 @@ def download_vcc2016():
     # os.path.exists方法用于判断当前目录下是否存在某个文件
     # 如果对应的数据文件存在就不用下载
     if os.path.exists(data_files[0]) or os.path.exists(data_files[1]):
-        print("File already exists!")
+        print("对应的文件已经存在！")
         return
 
     # 定义对应训练集与评估数据集
@@ -60,7 +60,7 @@ def download_vcc2016():
     train_comm = shlex.split(train_comm)
     eval_comm = shlex.split(eval_comm)
 
-    print('Start download dataset...')
+    print('开始下载对应的数据集...')
     # 加入一个子进程开始下载文件，下面使用的参数为args，其中默认是不使用shell执行命令，即参数shell=False。
     # 所以这个参数为一个字符串序列而非一整个字符串，这时subprocess.run一般都与shelx.split一起使用。
     # 如果想使用一整个字符串命令，那么必须设置参数shell=True
@@ -69,7 +69,7 @@ def download_vcc2016():
     # 下载完成后调用自定义的unzip方法解压zip格式文件
     unzip(data_files[0])
     unzip(data_files[1])
-    print('Finish download dataset...')
+    print('已经下载完对应的数据集！')
 
 
 # 创建目录方法，创建训练集与测试集
@@ -108,7 +108,7 @@ if __name__ == '__main__':
     # conflict_handler - 解决冲突选项的策略（通常是不必要的）
     # add_help - 为解析器添加一个 -h/–help 选项（默认值： True）
     # allow_abbrev - 如果缩写是无歧义的，则允许缩写长选项 （默认值：True）
-    parser = argparse.ArgumentParser(description='Download  voice conversion datasets.')
+    parser = argparse.ArgumentParser(description='下载语音转换数据集')
 
     # 定义对应的数据集路由
     # 默认路由
@@ -134,9 +134,9 @@ if __name__ == '__main__':
     # metavar - 在使用方法消息中使用的参数值示例。
     # dest - 被添加到 parse_args() 所返回对象上的属性名。
 
-    parser.add_argument('--datasets', type=str, help='Datasets available: vcc2016', default=datasets_default)
-    parser.add_argument('--train_dir', type=str, help='trainset directory', default=train_dir)
-    parser.add_argument('--test_dir', type=str, help='testset directory', default=test_dir)
+    parser.add_argument('--datasets', type=str, help='可使用的数据集为：vcc2016', default=datasets_default)
+    parser.add_argument('--train_dir', type=str, help='模型训练的目录', default=train_dir)
+    parser.add_argument('--test_dir', type=str, help='模型测试的目录', default=test_dir)
 
     # parse_args方法解析参数并把结果赋值给argv
     argv = parser.parse_args()
@@ -150,7 +150,7 @@ if __name__ == '__main__':
         download_vcc2016()
     # 否则就显示无该数据集
     else:
-        print('Dataset not available.')
+        print('找不到对应的数据集')
 
 # 经过运行download.py后会在data文件夹下出现四个文件夹，fourspeakers为训练文件夹，fourspeakers_test为测试文件夹。
 # vcc2016_training和evaluation_all为对应下载文件的解压文件夹。

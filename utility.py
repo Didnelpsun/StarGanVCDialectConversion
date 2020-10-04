@@ -58,13 +58,13 @@ class CommonInfo(metaclass=Singleton):
         p = os.path.join(self.datadir, "*")
 
         # glob.glob匹配所有的符合条件的文件，并将其以list的形式返回
-        # 调用glob.glob方法查询该目录下的所有文件，*代表匹配全部
+        # 调用glob.glob方法查询该目录下的所有文件或文件夹，*代表匹配全部
         all_sub_folder = glob.glob(p)
 
         # 使用rsplit方法将获取的文件集通过指定分隔符从最后开始对字符串进行分割并返回一个列表
         # maxsplit=1为仅切分一次，并取第二个部分
         # 如../marry/v1文件，就被分为../marry/和v1两个部分，[1]就是取v1这个部分
-        # 使用列表生成式保存为列表，对文件夹中所有的
+        # 使用列表生成式保存为列表，提取所有的文件夹的名字作为发音者标签
         all_speaker = [s.rsplit('/', maxsplit=1)[1] for s in all_sub_folder]
         # 将标签组重新排序
         all_speaker.sort()
@@ -81,7 +81,7 @@ class Normalizer(object):
     def __init__(self, statfolderpath: str = './etc'):
         # 定义文件集初始路由
         self.folderpath = statfolderpath
-        # 将normalizer_dict方法作为属性赋值给类
+        # 将自定义的normalizer_dict方法作为属性赋值给类
         self.norm_dict = self.normalizer_dict()
 
     # 向前操作，下面的两个函数都是为了处理数据的相关标准
@@ -122,7 +122,7 @@ class Normalizer(object):
                 stat_filepath = [fn for fn in glob.glob(p) if one_speaker in fn][0]
             except:
                 # 如果没有找到对应的文件就报错
-                raise Exception('====no match files!====')
+                raise Exception('====找不到对应的文件！====')
             # print(f'[load]: {stat_filepath}')
             # 找到路由对应文件就加载该文件
             t = np.load(stat_filepath)
