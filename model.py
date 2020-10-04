@@ -169,7 +169,7 @@ class DomainClassifier(nn.Module):
             nn.Conv2d(16, 4, (1, 4), (1, 2), (0, 1)),
             nn.AvgPool2d((1, 16)),
             # nn.LogSoftmax()为对数的softmax函数，softmax输出都是0-1之间的，因此logsofmax输出的是小于0的数
-            nn.LogSoftmax()
+            nn.LogSoftmax(dim=1)
         )
 
     def forward(self, x):

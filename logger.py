@@ -10,7 +10,7 @@ class Logger(object):
         """初始化摘要编写器"""
         # summary.FileWriter指定一个文件用来保存图
         # 定义一个记录器在对应的文件夹中
-        self.writer = tf.summary.FileWriter(log_dir)
+        self.writer = tf.summary.create_file_writer(log_dir)
 
     def scalar_summary(self, tag, value, step):
         """添加标量摘要"""
