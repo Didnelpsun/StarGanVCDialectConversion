@@ -33,7 +33,7 @@ EPSILON = 1e-10
 MODEL_NAME = 'starganvc_model'
 
 
-# 加载wav格式音频文件
+# 加载wav格式音频文件，参数为数据集地址，与采样率
 def load_wavs(dataset: str, sr):
     """
     数据字典中包含所有音频文件路由
@@ -61,7 +61,7 @@ def load_wavs(dataset: str, sr):
                             # 那么将这个文件路由保存到对应键名的字典的数组中
                             data[entry.name].append(onefile.path)
     # 打印对应键名
-    print(f'loaded keys: {data.keys()}')
+    print(f'加载的键名为：{data.keys()}')
     # data like {TM1:[xx,xx,xxx,xxx]}
     resdict = {}
     cnt = 0
@@ -90,7 +90,7 @@ def load_wavs(dataset: str, sr):
             print('.', end='')
             cnt += 1
 
-    print(f'\nTotal {cnt} aduio files!')
+    print(f'\n总共{cnt}个音频文件！')
     return resdict
 
 
@@ -100,14 +100,18 @@ def chunks(iterable, size):
         yield iterable[i:i + size]
 
 
+# 将wav格式文件转换为梅尔倒谱系数文件
 def wav_to_mcep_file(dataset: str, sr=SAMPLE_RATE, processed_filepath: str = './data/processed'):
-    '''用生成器将wavs转换带有特征的数据'''
+    """用生成器将wavs转换带有特征的数据"""
+    # shutil.rmtree递归地删除文件夹下的子文件夹与子文件，也会删除这个文件夹
+    # 这里就是初始化这个文件夹，防止有之前的文件残留
     shutil.rmtree(processed_filepath)
+    # 再调用os.makedirs递归重新创建预处理文件夹
     os.makedirs(processed_filepath, exist_ok=True)
-
+    # 遍历speakers文件夹，再遍历对应的发音者文件夹中的所有文件，计算得到
     allwavs_cnt = len(glob.glob(f'{dataset}/*/*.wav'))
-    print(f'Total {allwavs_cnt} audio files!')
-
+    print(f'总共{allwavs_cnt}个音频文件！')
+    # 调用自定义的load_wavs方法加载对应的wav格式数据
     d = load_wavs(dataset, sr)
     for one_speaker in d.keys():
         values_of_one_speaker = list(d[one_speaker].values())
@@ -126,7 +130,7 @@ def wav_to_mcep_file(dataset: str, sr=SAMPLE_RATE, processed_filepath: str = './
             newname = f'{one_speaker}_{index}'
             file_path_z = os.path.join(processed_filepath, newname)
             np.savez(file_path_z, f0=f0, coded_sp=coded_sp)
-            print(f'[保存]: {file_path_z}')
+            print(f'[保存]：{file_path_z}')
 
             # 拆分t0媒体文件
             for start_idx in range(0, coded_sp.shape[1] - FRAMES + 1, FRAMES):
@@ -137,7 +141,7 @@ def wav_to_mcep_file(dataset: str, sr=SAMPLE_RATE, processed_filepath: str = './
                     filePath = os.path.join(processed_filepath, temp_name)
 
                     np.save(filePath, one_audio_seg)
-                    print(f'[保存]: {filePath}.npy')
+                    print(f'[保存]：{filePath}.npy')
 
 
 def world_features(wav, sr, fft_size, dim):
@@ -178,9 +182,8 @@ if __name__ == "__main__":
     output_dir = argv.output_dir
     # 新建输出目录，如果存在不会报错
     os.makedirs(output_dir, exist_ok=True)
-
+    # 调用自定的wav转换方法，输入输入路径，采样频率，输出路径
     wav_to_mcep_file(input_dir, SAMPLE_RATE, processed_filepath=output_dir)
-
     # 输入文件夹是训练数据，我们需要计算并保存对应的音频数据
     # 为每个发音者统计特征
     generator = GenerateStatistics(output_dir)
