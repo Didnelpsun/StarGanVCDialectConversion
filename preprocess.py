@@ -1,5 +1,8 @@
 # 这个文件主要负责的是预处理数据
 
+# shutil提供对文件以及文件集合的高级操作
+import shutil
+
 # pyworld是一个操作WORLD开源软件的包，主要进行语音操作与合成
 import pyworld
 
