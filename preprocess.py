@@ -108,7 +108,7 @@ def wav_to_mcep_file(dataset: str, sr=SAMPLE_RATE, processed_filepath: str = './
     shutil.rmtree(processed_filepath)
     # 再调用os.makedirs递归重新创建预处理文件夹
     os.makedirs(processed_filepath, exist_ok=True)
-    # 遍历speakers文件夹，再遍历对应的发音者文件夹中的所有文件，计算得到
+    # 遍历speakers文件夹，再遍历对应的发音者文件夹中的所有文件，计算得到音频总数
     allwavs_cnt = len(glob.glob(f'{dataset}/*/*.wav'))
     print(f'总共{allwavs_cnt}个音频文件！')
     # 调用自定义的load_wavs方法加载对应的wav格式数据
@@ -173,8 +173,7 @@ if __name__ == "__main__":
     # 定义处理后的输出的数据目录
     output_dir = './data/processed'
     # 如果需要可以定义输入和输出目录
-    parser.add_argument('--input_dir', type=str, help='这个目录包含需要处理的数据',
-                        default=input_dir)
+    parser.add_argument('--input_dir', type=str, help='这个目录包含需要处理的数据', default=input_dir)
     parser.add_argument('--output_dir', type=str, help='这个目录存储处理过的数据', default=output_dir)
     # 获取对应的输入输出参数
     argv = parser.parse_args()
