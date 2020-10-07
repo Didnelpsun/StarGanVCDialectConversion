@@ -53,7 +53,7 @@ def load_wavs(dataset: str, sr):
                 # print(entry.name, entry.path)
                 # 再扫描对应的数据集子文件夹路由，并取别名为it_f
                 with os.scandir(entry.path) as it_f:
-                    # 再次遍历
+                    # 再次遍历子文件夹中所有wav文件
                     for onefile in it_f:
                         # 如果这个结果是文件
                         if onefile.is_file():
@@ -62,32 +62,46 @@ def load_wavs(dataset: str, sr):
                             data[entry.name].append(onefile.path)
     # 打印对应键名
     print(f'加载的键名为：{data.keys()}')
-    # data like {TM1:[xx,xx,xxx,xxx]}
+    # data这个数据会是一个包含多个包含文件路由的数组的对象，对象名就是标签名，如{TM1:[xx,xx,xxx,xxx]}
+    # data主要是保存对应标签与里面的文件路由组
     resdict = {}
+    # 定义计数的变量
     cnt = 0
-    # items()以列表返回可遍历的(键, 值) 元组数组
+    # items()方法以列表返回可遍历的(键, 值) 元组数组
     for key, value in data.items():
+        # 将data键名重新赋值给resdict对象的键名，并赋值为空字典
         resdict[key] = {}
-        # 将键名赋值给resdict字典，并赋值为空字典
-        # 遍历字典的值
+        # 遍历data字典的值，既路由数组的值
         for one_file in value:
-            # 取得文件名
-            filename = one_file.split('/')[-1].split('.')[0]  # like 100061
+            # 取得文件名，其实就是一个发音者样本的编号，首先根据路径名获取文件名.扩展名，再根据.分割得到文件名如10001
+            filename = one_file.split('/')[-1].split('.')[0]
+            # 利用f''转换字符串，其实没什么差别
             newkey = f'{filename}'
-            # librosa.load方法f为文件地址，sr参数为采样率
+            # librosa.load方法用来读取音频，然后转为numpy的ndarry格式进行存储
+            # f为文件地址，sr参数为采样率
             # dtype为精度，将返回一个音频时间序列和一个音频采样率
             # 因为音频采样率不被使用，所以以_作为变量名占位保存
             # mono=True将信号转换为单声道
             wav, _ = librosa.load(one_file, sr=sr, mono=True, dtype=np.float64)
             # librosa.effects.trim从音频信号中消除前导和尾随的静音
             # top_db参数为低于参考值的阈值（分贝）视为静音
-            # 返回值为两个，第一个是被切割的信号数据，格式为np.ndarray，形状为(m,)或者(2, m)
+            # ref：参考功率。 默认情况下，它使用np.max并与信号中的峰值功率进行比较。
+            # frame_length：int> 0 每帧的样本数
+            # hop_length：int> 0 帧之间的样本数
+            # 返回值为两个，第一个是被切割的信号数据，格式为np.ndarray，第二个为形状，为(m,)或者(2, m)
             y, _ = librosa.effects.trim(wav, top_db=15)
+            # 其中wav为原始音频数据，y为进行静音去除后处理过的音频数据，所以wav长度要大于y长度
+            # 将y再次处理后赋值给wav，这样wav就跟y的长度一样，比原始wav的长度要小
+            # 对y的处理是第一个数据不变，后面的数据是将从第2开始到结束的数据减去第1开始倒数第2的数据的0.97倍
             wav = np.append(y[0], y[1:] - 0.97 * y[:-1])
-
+            # 将对应的数据保存为二维数组，key为发音者名字，newkey为对应的文件名，如TM1:{100062:[xxxxx], .... }
             resdict[key][newkey] = wav
-            # resdict[key].append(temp_dict) #like TM1:{100062:[xxxxx], .... }
+            # 包含end=''作为print()BIF的一个参数，会使该函数关闭“在输出中自动包含换行”的默认行为
+            # 其原理是：为end传递一个空字符串，这样print函数不会在字符串末尾添加一个换行符，而是添加一个空字符串
+            # 这个只有Python3有用，Python2不支持。
+            # 所以下面这行代码会打出一行点
             print('.', end='')
+            # 计数加1
             cnt += 1
 
     print(f'\n总共{cnt}个音频文件！')
