@@ -31,6 +31,8 @@ CHUNK_SIZE = 1  # 将块大小的音频剪辑合并在一起
 # 定义ε参数
 EPSILON = 1e-10
 MODEL_NAME = 'starganvc_model'
+# 定义音频文件大小
+allwavs_cnt = 0
 
 
 # 加载wav格式音频文件，参数为数据集地址，与采样率
@@ -40,6 +42,7 @@ def load_wavs(dataset: str, sr):
     特别是包含所有wav格式的文件
     """
     data = {}
+    global allwavs_cnt
     # os.scandir获取当前工作文件夹内的文件夹或文件
     # 扫描数据集对应路由，并将扫描结果取别名为it
     with os.scandir(dataset) as it:
@@ -94,17 +97,19 @@ def load_wavs(dataset: str, sr):
             # 将y再次处理后赋值给wav，这样wav就跟y的长度一样，比原始wav的长度要小
             # 对y的处理是第一个数据不变，后面的数据是将从第2开始到结束的数据减去第1开始倒数第2的数据的0.97倍
             wav = np.append(y[0], y[1:] - 0.97 * y[:-1])
-            # 将对应的数据保存为二维数组，key为发音者名字，newkey为对应的文件名，如TM1:{100062:[xxxxx], .... }
+            # 将对应的数据保存为二维数组，key为发音者名字，newkey为对应的文件名，值为数据数组，如TM1:{100062:[xxxxx], .... }
             resdict[key][newkey] = wav
+            # 计数加1
+            cnt += 1
+            rate = cnt / allwavs_cnt
+            rate_num = int(rate * 100)
+            number = int(50 * rate)
+            r = '\r加载进度：[%s%s]%d%%' % ("#" * number, " " * (50 - number), rate_num,)
             # 包含end=''作为print()BIF的一个参数，会使该函数关闭“在输出中自动包含换行”的默认行为
             # 其原理是：为end传递一个空字符串，这样print函数不会在字符串末尾添加一个换行符，而是添加一个空字符串
             # 这个只有Python3有用，Python2不支持。
-            # 所以下面这行代码会打出一行点
-            print('.', end='')
-            # 计数加1
-            cnt += 1
-
-    print(f'\n总共{cnt}个音频文件！')
+            print("\r {}".format(r), end=" ")  # \r回到行的开头
+    print("\r")
     return resdict
 
 
@@ -123,6 +128,7 @@ def wav_to_mcep_file(dataset: str, sr=SAMPLE_RATE, processed_filepath: str = './
     # 再调用os.makedirs递归重新创建预处理文件夹
     os.makedirs(processed_filepath, exist_ok=True)
     # 遍历speakers文件夹，再遍历对应的发音者文件夹中的所有文件，计算得到音频总数
+    global allwavs_cnt
     allwavs_cnt = len(glob.glob(f'{dataset}/*/*.wav'))
     print(f'总共{allwavs_cnt}个音频文件！')
     # 调用自定义的load_wavs方法加载对应的wav格式数据
