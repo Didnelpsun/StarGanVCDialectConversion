@@ -2,7 +2,7 @@
 
 # npy格式文件是numpy专用的保存数组的二进制文件，npz是对应的压缩文件
 import numpy as np
-
+# os库为标准文件处理库
 import os
 
 # glob为python标准库之一，可根据Unix终端所用规则找出所有匹配特定模式的路径名，但会按不确定的顺序返回结果，主要用于文件查找
@@ -71,51 +71,54 @@ class CommonInfo(metaclass=Singleton):
         return all_speaker
 
 
-# 调用CommonInfo构造方法将数据地址传入，调用speakers属性获取对应标签组方法
+# 调用CommonInfo构造方法将数据地址传入，以属性方式调用speakers方法获取对应标签组
 speakers = CommonInfo('data/speakers').speakers
 
 
-# 个性标准化方法
+# 个性归一化准化方法
 class Normalizer(object):
-    """获取标准化的方法"""
+    """获取归一化的方法"""
+    # 默认的归一化，路由为etc文件夹
     def __init__(self, statfolderpath: str = './etc'):
         # 定义文件集初始路由
         self.folderpath = statfolderpath
-        # 将自定义的normalizer_dict方法作为属性赋值给类
+        # 将自定义的normalizer_dict方法所返回的数据字典作为属性赋值给类
         self.norm_dict = self.normalizer_dict()
 
-    # 向前操作，下面的两个函数都是为了处理数据的相关标准
+    # 向前处理，下面的两个函数都是为了处理数据的相关处理方法
     def forward_process(self, x, speakername):
         # coded_sps_mean为编码平均值，coded_sps_std为编码标准差
+        # 获取对应发音者键名的对应值
         mean = self.norm_dict[speakername]['coded_sps_mean']
         std = self.norm_dict[speakername]['coded_sps_std']
         # np.reshape方法将数组根据[行数,列数]的参数变为不同形状矩阵，而这里的-1表示是不知道行数多少
         # 所以这样就可以将mean和std数据同时变为列向量形式的特征向量
         mean = np.reshape(mean, [-1, 1])
         std = np.reshape(std, [-1, 1])
+        # 将输入值先减去平均值再除以标准差
         x = (x - mean) / std
 
         return x
 
-    # 向后操作
+    # 向后处理
     def backward_process(self, x, speakername):
-        # 取出对应名字的两个数据字典
+        # 取出对应键名的数据值
         mean = self.norm_dict[speakername]['coded_sps_mean']
         std = self.norm_dict[speakername]['coded_sps_std']
         mean = np.reshape(mean, [-1, 1])
         std = np.reshape(std, [-1, 1])
+        # 将输入值先乘上标准差再加上平均值
         x = x * std + mean
 
         return x
 
     # 返回一个发音者名对应发音者音频数据的字典
     def normalizer_dict(self):
-        """返回所有发音者的标准化后参数"""
-
+        """返回所有发音者的归一化后参数"""
         d = {}
-        # 迭代处理每个发声者数据，遍历speakers类中的所有发音者名
+        # 迭代处理每个发声者数据，首先遍历speakers类中的所有发音者名
         for one_speaker in speakers:
-            # 将数据路由后加上*.npz表示取出该目录下所有的npz类型文件
+            # 将数据路由后加上*.npz表示取出该目录默认etc下所有的npz类型文件
             p = os.path.join(self.folderpath, '*.npz')
             try:
                 # 根据路径取出对应的文件，如果遍历的子对象在对应的文件集中，就再取出作为文件路由
@@ -161,7 +164,7 @@ class GenerateStatistics(object):
         self.folder = folder
         # 定义保存npz数据文件的字典
         self.include_dict_npz = {}
-        # 遍历speakers类，遍历值为所有发音者名字
+        # 遍历全局定义的speakers数据遍历，遍历值为所有发音者名字
         for s in speakers:
             # __contains__用于判断某键是否存在该字典中
             # 如果s这个发音者名字不在定义的字典中，就将键加入字典，并赋值为空
@@ -201,7 +204,7 @@ class GenerateStatistics(object):
 
     def generate_stats(self, statfolder: str = 'etc'):
         """
-        生成标准化的对于所有用户使用过的统计数据
+        生成归一化的对于所有用户使用过的统计数据
         输入sp与f0等类似数据
         第一步，生成编码的平均标准差
         第二步，生成f0即生成数据的平均标准差

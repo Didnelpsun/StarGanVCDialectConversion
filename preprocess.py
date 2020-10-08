@@ -103,8 +103,8 @@ def load_wavs(dataset: str, sr):
             cnt += 1
             rate = cnt / allwavs_cnt
             rate_num = int(rate * 100)
-            number = int(50 * rate)
-            r = '\r加载进度：[%s%s]%d%%' % ("#" * number, " " * (50 - number), rate_num,)
+            number = int(20 * rate)
+            r = '\r加载进度：[%s%s]%d%%' % ("#" * number, " " * (20 - number), rate_num,)
             # 包含end=''作为print()BIF的一个参数，会使该函数关闭“在输出中自动包含换行”的默认行为
             # 其原理是：为end传递一个空字符串，这样print函数不会在字符串末尾添加一个换行符，而是添加一个空字符串
             # 这个只有Python3有用，Python2不支持。
@@ -113,9 +113,12 @@ def load_wavs(dataset: str, sr):
     return resdict
 
 
+# 用于将可迭代对象生成size参数大小的数据块
 def chunks(iterable, size):
     """从迭代器中生成连续的n大小的数据块"""
+    # 使用range生成从0到总长度的步长为size的序列
     for i in range(0, len(iterable), size):
+        # 将i作为索引，使用yield生成一个序列
         yield iterable[i:i + size]
 
 
@@ -133,53 +136,83 @@ def wav_to_mcep_file(dataset: str, sr=SAMPLE_RATE, processed_filepath: str = './
     print(f'总共{allwavs_cnt}个音频文件！')
     # 调用自定义的load_wavs方法加载对应的wav格式数据
     d = load_wavs(dataset, sr)
+    # 通过.keys方法获取d中对象的键名，既发音者的所有标签
     for one_speaker in d.keys():
+        # 通过values获取d中所对应标签的数据，既音频数据
         values_of_one_speaker = list(d[one_speaker].values())
-
+        # enumerate用于将将一个可遍历的数据对象(如列表、元组或字符串)组合为一个索引序列，同时列出数据和数据下标。
+        # chunks为自定义函数用于将单个音频数据切割为固定size的数据块
+        # 这里会取出一个数据的每个数据块和对应索引
         for index, one_chunk in enumerate(chunks(values_of_one_speaker, CHUNK_SIZE)):
-            wav_concated = []  # 保存一个批次的wavs数据
+            # wav_concated保存一个批次的wavs数据
+            wav_concated = []
+            # array的copy方法用来复制array数据，这里是深拷贝
+            # one_chunk代码块的形状为（1，...），即两维数据，所有数据在第二维中：[[3,4,5]]
+            # 所以这里的temp也是深拷贝one_chunk数据
             temp = one_chunk.copy()
-
-            # 连接wavs数据
+            # 遍历数据块中的每一个数据
+            # 将原来的array格式的one_chunk数据变为list格式的wav_concated数据，且是从二维转为一维的
             for one in temp:
+                # extend() 函数用于在列表末尾一次性追加另一个序列中的多个值（用新列表扩展原来的列表）。
                 wav_concated.extend(one)
+            # 将wav_contated数据转换为numpy数组
             wav_concated = np.array(wav_concated)
 
-            # 处理一个批次的wavs数据
+            # 调用自定义的cal_mcep方法处理一个批次的wavs数据，参数为ndarray格式的数据，采样率和特征维数
+            # 返回值为基频，非周期性特征，频谱包络，编码频谱包络
             f0, ap, sp, coded_sp = cal_mcep(wav_concated, sr=sr, dim=FEATURE_DIM)
+            # 设置处理过的npz格式文件文件，字符串为发音者名与索引值
             newname = f'{one_speaker}_{index}'
+            # 设置对应的路由
             file_path_z = os.path.join(processed_filepath, newname)
+            # np.savez保存多个数组到同一个二进制的npz文件中，第一个参数为保存路由，后面的参数为保存的数据
+            # 这里会保存f0数据数组和转置过的编码频谱包络数组，对应键名为f0和coded_sp
             np.savez(file_path_z, f0=f0, coded_sp=coded_sp)
-            print(f'[保存]：{file_path_z}')
+            print(f'[保存npz文件]：{file_path_z}', end=' ')
 
-            # 拆分t0媒体文件
+            # 处理转置过的编码频谱包络，因为这个数据一行为同一个特征值，所以按[1]即第二维计算每一个样本数据，以采样点数为截取步长
+            # 且会被处理的coded_sp数据对应特征的样本量必须大于采样数，否则不会被处理
             for start_idx in range(0, coded_sp.shape[1] - FRAMES + 1, FRAMES):
+                # 因为这个数组是二维的，所以one_audio_seg获取对应长度的所有行的数据
+                # 即获取所有默认36个特征的分块默认为512采样点的特征值
                 one_audio_seg = coded_sp[:, start_idx: start_idx + FRAMES]
-
+                # 如果被采样数据切割后长度为512，则会被处理保存，如果为余下的不满采样点数的样本数据将被丢弃
                 if one_audio_seg.shape[1] == FRAMES:
+                    # 文件名为npz文件名加上起始点数序号
                     temp_name = f'{newname}_{start_idx}'
                     filePath = os.path.join(processed_filepath, temp_name)
-
+                    # np.save将一个矩阵保存到对应npy文件，格式为二进制，参数为路由，一个ndarray矩阵
                     np.save(filePath, one_audio_seg)
-                    print(f'[保存]：{filePath}.npy')
+                    print(f'[保存npy文件]：{filePath}', end=' ')
+            print('')
 
 
+# 参数为wav数据，采样率，傅里叶变换大小，特征维数，主要是为了获取音频相关特征数据
 def world_features(wav, sr, fft_size, dim):
+    # pyworld.harvest用来提取音频基频F0，参数为数据和采样率，返回值为基频和每一帧时间位置，格式为ndarray数组
     f0, timeaxis = pyworld.harvest(wav, sr)
+    # pyworld.cheaptrick用来计算简单技巧下的谐波谱包络估计算法，参数为音频数据，基频FO，时间位置数组，采样率，傅里叶变换大小
+    # 返回值为频谱图：频谱包络（平方量级），包络即随机过程的振幅随着时间变化的曲线
     sp = pyworld.cheaptrick(wav, f0, timeaxis, sr, fft_size=fft_size)
+    # pyworld.d4c是D4C非周期性估计算法获取非周期特征AP，参数为音频数据，基频F0，时间位置数组，采样率和傅里叶变换大小
+    # 返回值是非周期性特征（即一个包络线，相对于频谱包络线的线性幅度）
     ap = pyworld.d4c(wav, f0, timeaxis, sr, fft_size=fft_size)
+    # pyworld.code_spectral_envelope是对频谱包络的降维，参数为频谱包络，采样率与编码谱包络维数，返回编码频谱包络
     coded_sp = pyworld.code_spectral_envelope(sp, sr, dim)
-
+    # 返回值为基频，时间位置数组，频谱包络，非周期性特征，编码频谱包络
     return f0, timeaxis, sp, ap, coded_sp
 
 
+# 主要是对调用world_features方法返回数据的coded_sp进行转置，并对其他数据直接返回
+# 参数为wav数据，采样率，特征维数，傅里叶变换大小
 def cal_mcep(wav, sr=SAMPLE_RATE, dim=FEATURE_DIM, fft_size=FFTSIZE):
-    '''cal mecp给出wav信号
+    """cal mecp给出wav信号
     帧周期只被用于pad_wav_to_get_fixed_frames
-    '''
+    """
     f0, timeaxis, sp, ap, coded_sp = world_features(wav, sr, fft_size, dim)
-    coded_sp = coded_sp.T  # dim x n
-
+    # coded_sp的数据形状为(...,36)，即有n个数据量，数据项中共有特征维数个数据，默认是36
+    # 经过转置后同一个特征都在同一行中，共有特征维数个特征数据组
+    coded_sp = coded_sp.T
     return f0, ap, sp, coded_sp
 
 
@@ -203,8 +236,8 @@ if __name__ == "__main__":
     os.makedirs(output_dir, exist_ok=True)
     # 调用自定的wav转换方法，输入输入路径，采样频率，输出路径
     wav_to_mcep_file(input_dir, SAMPLE_RATE, processed_filepath=output_dir)
-    # 输入文件夹是训练数据，我们需要计算并保存对应的音频数据
-    # 为每个发音者统计特征
+    # 调用utility所定义的GenerateStatistics对象，并传入输出路径作为参数
+    # 这个generator主要是为了
     generator = GenerateStatistics(output_dir)
     generator.generate_stats()
     generator.normalize_dataset()
