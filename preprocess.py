@@ -237,7 +237,7 @@ if __name__ == "__main__":
     # 调用自定的wav转换方法，输入输入路径，采样频率，输出路径
     wav_to_mcep_file(input_dir, SAMPLE_RATE, processed_filepath=output_dir)
     # 调用utility所定义的GenerateStatistics对象，并传入输出路径作为参数
-    # 这个generator主要是为了
+    # 这个generator主要是为了将已经处理过的processed中的数据再进行一次处理，将所有的npz格式文件保存到一个对象的属性字典中
     generator = GenerateStatistics(output_dir)
     generator.generate_stats()
     generator.normalize_dataset()

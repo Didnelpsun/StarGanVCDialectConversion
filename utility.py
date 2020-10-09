@@ -157,7 +157,7 @@ class Normalizer(object):
         return f0_converted
 
 
-# 生成发音者npz格式数据字典
+# 生成发音者对应npz格式数据字典
 class GenerateStatistics(object):
     # 初始化对象，一个参数为folder，表示处理目录
     def __init__(self, folder: str = './data/processed'):
@@ -170,36 +170,43 @@ class GenerateStatistics(object):
             # 如果s这个发音者名字不在定义的字典中，就将键加入字典，并赋值为空
             if not self.include_dict_npz.__contains__(s):
                 self.include_dict_npz[s] = []
-            # 循环遍历folder路由下所有文件
+            # os.listdir用于返回指定的文件夹包含的文件或文件夹的名字的列表
+            # 循环遍历folder路由下所有文件，这里包含处理过的npz和npy格式文件
             for one_file in os.listdir(folder):
+                # startswith用于检查字符串是否是以指定子字符串开头，如果是则返回 True，否则返回 False，endswith同理
                 # 如果这个文件是以发音者名开始，并以npz结尾（即该文件是npz格式文件）
                 if one_file.startswith(s) and one_file.endswith('npz'):
                     # 就将这个npz格式文件放入对应发音者键值的字典中
                     self.include_dict_npz[s].append(one_file)
 
     # @staticmethod注释表示该方法为静态方法，虽然名义由该模块管理，但是可以无视self，即对象，自由调用该方法
-    # 与其他编程语言的静态方法一致，所以下面的参数中没有带self参数
+    # 与其他编程语言的静态方法一致无需实例化，所以下面的参数中没有带self参数
     @staticmethod
+    # 参数为编码频谱包络组，获取参数的平均值与标准差
     def coded_sp_statistics(coded_sps):
-        # sp shape (D, T)
-        # np.concatenate表示按参数axis为轴合并为一个新数组，这里表示在第二维，即行方向合并coded_sps数组
+        # 包络的形状为（特征维数，采样点数）
+        # np.concatenate表示按参数axis为轴合并为一个新数组，axis表示拼接维数
+        # 这里表示在第二维，即行方向合并coded_sps数组，即源数据同一列的数组会合并为一个数组
+        # 这样会取得同一个发音者所有音频数据基频的对应合并数据组
         coded_sps_concatenated = np.concatenate(coded_sps, axis=1)
         # np.mean按计算axis参数维上的平均值，keepdims=False即不保持维数，可能会降维
-        # 这里计算数组行方向上的每一个平均值，并返回一个一维数组
+        # 这里计算数组行方向上即每一列数据组的每一个平均值，并返回一个一维数组
         coded_sps_mean = np.mean(coded_sps_concatenated, axis=1, keepdims=False)
         # 与上面方法类似，np.std计算axis参数维上的标准差，在这里计算行方向的标准差，并不保持维数
         coded_sps_std = np.std(coded_sps_concatenated, axis=1, keepdims=False)
+        print(coded_sps_mean, coded_sps_std)
         return coded_sps_mean, coded_sps_std
 
     @staticmethod
-    # 这里处理的是转换后数据
+    # 参数为基频数据组
     def logf0_statistics(f0s):
-        # 按照默认参数0，对f0s数组按列方向合并，在对结果进行掩码化与对数取值
+        # 按照默认参数0，对f0s数组按列方向合并，即每一行的数据合并为一个数据组
+        # 在对结果进行掩码化与对数取值
         log_f0s_concatenated = np.ma.log(np.concatenate(f0s))
-        # 分别取其平均值与标准差
+        # 分别取其平均值与标准差，不设置axis会只返回一个实数
         log_f0s_mean = log_f0s_concatenated.mean()
         log_f0s_std = log_f0s_concatenated.std()
-
+        print(log_f0s_mean, log_f0s_std)
         return log_f0s_mean, log_f0s_std
 
     def generate_stats(self, statfolder: str = 'etc'):
@@ -210,32 +217,36 @@ class GenerateStatistics(object):
         第二步，生成f0即生成数据的平均标准差
          """
         # os.path.realpath方法用于返回该脚本的绝对路径
-        # 讲绝对路径与一个文件夹名路径连接，这个文件夹用来存放一些其他数据
+        # 将绝对路径与一个文件夹名路径连接，这个文件夹用来存放一些其他数据
         etc_path = os.path.join(os.path.realpath('.'), statfolder)
         # os.makedirs用于创建目录文件夹，这个方法如果父文件集都不存在则会一同创建
         # exist_ok=True表示当要创建的文件夹已经存在时不会抛出OSError错误
+        # 这里会在该项目一级目录下创建一个etc文件夹与data文件夹同级
         os.makedirs(etc_path, exist_ok=True)
         # .keys()以列表的形式返回一个字典的所有键名
-        # 遍历所有的保存npz格式文件的字典include_dict_npz键名
+        # 遍历所有的保存npz格式文件的字典include_dict_npz属性的键名
         for one_speaker in self.include_dict_npz.keys():
+            # 定义两个变量，都是用来保存一个发音者的所有f0与coded_sps数据
             f0s = []
             coded_sps = []
-            # 将键名为onespeaker的npz数据保存到arr01中
+            # 将键名为onespeaker的npz数据字典设置为arr01中
             arr01 = self.include_dict_npz[one_speaker]
-            # 如果这个数据为空数据，就跳出这个循环进行下一次遍历
+            # 如果这个数据为空数据，即对应键名的npz数据字典中没有数据无法处理，就跳出这个循环进行下一次遍历
             if len(arr01) == 0:
                 continue
-            # 遍历这个npz数据中的所有数据项
+            # 如果含有数据遍历这个npz数据中的所有数据项
             for one_file in arr01:
-                # 将文件夹的路由与这个文件的路由名合并并加载文件
+                # np.load用来加载npy与npz格式文件
+                # 将文件夹processed的路由与这个文件的路由名合并并加载文件
                 t = np.load(os.path.join(self.folder, one_file))
-                # 将这个文件的f0项，即生成样本项转换为特征列向量
+                # npz文件中包含着一个音频数据的f0与coded_sp
+                # 将这个文件的f0项转换形状，即生成样本项转换为特征列向量
                 f0_ = np.reshape(t['f0'], [-1, 1])
                 # 把这个生成样本的特征列向量放到列向量组中
                 f0s.append(f0_)
                 # 并把npz数据文件的coded_sp编码项也放入对应数组中
                 coded_sps.append(t['coded_sp'])
-            # 调用原有方法得到对应的特征向量组与编码组的平均值与标准差
+            # 调用该类原有方法得到对应的基频组与编码频谱包络组的平均值与标准差
             log_f0s_mean, log_f0s_std = self.logf0_statistics(f0s)
             coded_sps_mean, coded_sps_std = self.coded_sp_statistics(coded_sps)
             # 打印对应数据
