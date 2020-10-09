@@ -250,19 +250,19 @@ class GenerateStatistics(object):
             log_f0s_mean, log_f0s_std = self.logf0_statistics(f0s)
             coded_sps_mean, coded_sps_std = self.coded_sp_statistics(coded_sps)
             # 打印对应数据
-            print(f'log_f0s_mean:{log_f0s_mean} log_f0s_std:{log_f0s_std}')
-            print(f'coded_sps_mean:{coded_sps_mean.shape}  coded_sps_std:{coded_sps_std.shape}')
+            print(f'[{one_speaker}] 对数化基频F0组平均值为：{log_f0s_mean}，对数化基频FO组标准差值为：{log_f0s_std}', end='，')
+            print(f'编码频谱包络组平均值形状为：{coded_sps_mean.shape}，编码频谱包络组标准差形状为：{coded_sps_std.shape}')
             # 将文件名命名为etc文件夹名/one_speaker变量值-stats.npz
             filename = os.path.join(etc_path, f'{one_speaker}-stats.npz')
-            # np.savez保存数组到一个二进制的文件中,但是厉害的是,它可以保存多个数组到同一个文件中,保存格式是.npz,
-            # 其实就是多个前面np.save的保存的npy,再通过打包(未压缩)的方式把这些文件归到一个文件上
+            # np.savez保存数组到一个二进制的文件中，保存多个数组到同一个文件中,保存格式是.npz,
+            # 其实就是多个前面np.save的保存的npy，再通过打包(未压缩)的方式把这些文件归到一个文件上
             np.savez(filename,
                      log_f0s_mean=log_f0s_mean, log_f0s_std=log_f0s_std,
                      coded_sps_mean=coded_sps_mean, coded_sps_std=coded_sps_std)
-            print(f'[save]: {filename}')
+            print(f'[保存处理过的npz文件]: {filename}')
 
     def normalize_dataset(self):
-        """运行一次规范化数据集"""
+        """运行一次归一化数据集"""
         norm = Normalizer()
         # 寻找npy数据集文件
         files = librosa.util.find_files(self.folder, ext='npy')

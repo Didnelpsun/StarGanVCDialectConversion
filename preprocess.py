@@ -64,7 +64,7 @@ def load_wavs(dataset: str, sr):
                             # 那么将这个文件路由保存到对应键名的字典的数组中
                             data[entry.name].append(onefile.path)
     # 打印对应键名
-    print(f'加载的键名为：{data.keys()}')
+    print(f'加载的键名为：{list(data.keys())}')
     # data这个数据会是一个包含多个包含文件路由的数组的对象，对象名就是标签名，如{TM1:[xx,xx,xxx,xxx]}
     # data主要是保存对应标签与里面的文件路由组
     resdict = {}
@@ -239,6 +239,7 @@ if __name__ == "__main__":
     # 调用utility所定义的GenerateStatistics对象，并传入输出路径作为参数
     # 这个generator主要是为了将已经处理过的processed中的数据再进行一次处理，将所有的npz格式文件保存到一个对象的属性字典中
     generator = GenerateStatistics(output_dir)
+    # 调用这个实例的方法generate_stats新建etc文件夹将对应发音者数据处理值保存为...-stats的npz文件
     generator.generate_stats()
     generator.normalize_dataset()
     end = datetime.now()
