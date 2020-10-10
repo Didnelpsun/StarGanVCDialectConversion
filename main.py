@@ -8,7 +8,7 @@ from torch.backends import cudnn
 
 
 def str2bool(v):
-    return v.lower() in ('true')
+    return v.lower() in 'true'
 
 
 def main(config):
@@ -26,8 +26,9 @@ def main(config):
         os.makedirs(config.result_dir)
 
     # 数据加载器
-    
-    dloader = data_loader(config.data_dir, batch_size=config.batch_size, mode=config.mode,num_workers=config.num_workers)
+
+    dloader = data_loader(config.data_dir, batch_size=config.batch_size, mode=config.mode,
+                          num_workers=config.num_workers)
 
     # 为训练和测试StarGAN的Solver类
     solver = Solver(dloader, config)
@@ -37,39 +38,31 @@ def main(config):
 
     elif config.mode == 'test':
         solver.test()
-      
 
 
 if __name__ == '__main__':
+    # 获取命令行参数
     parser = argparse.ArgumentParser()
-
-    # 模型配置
-
-    parser.add_argument('--lambda_cycle', type=float, default=3, help='weight for cycle loss')
-    parser.add_argument('--lambda_cls', type=float, default=2, help='weight for domain classification loss')
-    
-    parser.add_argument('--lambda_identity', type=float, default=2, help='weight for identity loss')
-    
+    # 设置评价标准损失函数的各项权值
+    parser.add_argument('--lambda_cycle', type=float, default=3, help='循环一致性损失的权值')
+    parser.add_argument('--lambda_cls', type=float, default=2, help='域分类损失的权值')
+    parser.add_argument('--lambda_identity', type=float, default=2, help='身份一致性损失的权值')
     # 训练配置
-    
-    parser.add_argument('--batch_size', type=int, default=4, help='mini-batch size')
-    parser.add_argument('--num_iters', type=int, default=200000, help='number of total iterations for training D')
-    parser.add_argument('--num_iters_decay', type=int, default=100000, help='number of iterations for decaying lr')
-    parser.add_argument('--g_lr', type=float, default=0.0001, help='learning rate for G')
-    parser.add_argument('--d_lr', type=float, default=0.0001, help='learning rate for D')
-    parser.add_argument('--c_lr', type=float, default=0.0001, help='learning rate for C')
-    parser.add_argument('--n_critic', type=int, default=5, help='number of D updates per each G update')
-    parser.add_argument('--beta1', type=float, default=0.5, help='beta1 for Adam optimizer')
-    parser.add_argument('--beta2', type=float, default=0.999, help='beta2 for Adam optimizer')
-    parser.add_argument('--resume_iters', type=int, default=None, help='resume training from this step')
-    
-    
-
+    parser.add_argument('--batch_size', type=int, default=4, help='设置最小批处理大小')
+    parser.add_argument('--num_iters', type=int, default=200000, help='训练判别器D的总迭代次数')
+    parser.add_argument('--num_iters_decay', type=int, default=100000, help='衰减lr的迭代次数')
+    parser.add_argument('--g_lr', type=float, default=0.0001, help='生成器G的学习频率')
+    parser.add_argument('--d_lr', type=float, default=0.0001, help='判别器D的学习频率')
+    parser.add_argument('--c_lr', type=float, default=0.0001, help='域分类器C的学习频率')
+    parser.add_argument('--n_critic', type=int, default=5, help='每次G更新时的D更新次数')
+    parser.add_argument('--beta1', type=float, default=0.5, help='Adam优化器的beta1参数')
+    parser.add_argument('--beta2', type=float, default=0.999, help='Adam优化器的beta2参数')
+    parser.add_argument('--resume_iters', type=int, default=None, help='从此步骤恢复培训')
     # 测试配置
-    parser.add_argument('--test_iters', type=int, default=200000, help='test model from this step')
-    parser.add_argument('--src_speaker', type=str, default=None, help='test model source speaker')
-    parser.add_argument('--trg_speaker', type=str, default="['SF1', 'TM1']", help='string list repre of target speakers eg."[a,b]"')
-
+    parser.add_argument('--test_iters', type=int, default=200000, help='从这个步骤开始训练模型')
+    parser.add_argument('--src_speaker', type=str, default=None, help='测试模型的源发音者')
+    parser.add_argument('--trg_speaker', type=str, default="['SF1', 'TM1']",
+                        help='目标发音者的字符串列表表示，例如“[a，b]”')
     # 其他配置
     parser.add_argument('--num_workers', type=int, default=4)
     parser.add_argument('--mode', type=str, default='train', choices=['train', 'test'])
@@ -82,14 +75,15 @@ if __name__ == '__main__':
     parser.add_argument('--model_save_dir', type=str, default='starganvc/models')
     parser.add_argument('--sample_dir', type=str, default='starganvc/samples')
     parser.add_argument('--result_dir', type=str, default='starganvc/results')
-    
+
     # 步长
     parser.add_argument('--log_step', type=int, default=10)
     parser.add_argument('--sample_step', type=int, default=2000)
     parser.add_argument('--model_save_step', type=int, default=10000)
     parser.add_argument('--lr_update_step', type=int, default=100000)
-
+    # 获取所有的设置
     config = parser.parse_args()
+    # 打印设置
     print(config)
+    # 调用main函数
     main(config)
-    

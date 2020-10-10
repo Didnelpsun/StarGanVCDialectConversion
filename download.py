@@ -32,7 +32,7 @@ def unzip(zip_filepath, dest_dir='./data'):
         # pwd是用于解密文件的密码。
         # 这里将zip_filepath路径的文件放入dest_dir路径中
         zf.extractall(dest_dir)
-    print("解压对应文件已完成！")
+    print(f"解压{zip_filepath}已完成！")
 
 
 # 用于下载vcc2016数据集
@@ -77,7 +77,7 @@ def create_dirs(trainset: str = './data/fourspeakers', testset: str = './data/fo
     """创建测试与训练数据集"""
     if not os.path.exists(trainset):
         # 如果不存在该目录就创造目录
-        print(f'create train set dir {trainset}')
+        print(f'创建训练数据集：{trainset}')
         # os.makedirs用于递归创建目录。
         # 如果子目录创建失败或者已经存在，会抛出一个OSError的异常，Windows上Error 183即为目录已经存在的异常错误。
         # 如果第一个参数path只有一级，则和mkdir()函数相同。
@@ -86,7 +86,7 @@ def create_dirs(trainset: str = './data/fourspeakers', testset: str = './data/fo
         os.makedirs(trainset, exist_ok=True)
 
     if not os.path.exists(testset):
-        print(f'create test set dir {testset}')
+        print(f'创建测试数据集：{testset}')
         os.makedirs(testset, exist_ok=True)
 
 
