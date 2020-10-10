@@ -104,7 +104,7 @@ def load_wavs(dataset: str, sr):
             rate = cnt / allwavs_cnt
             rate_num = int(rate * 100)
             number = int(20 * rate)
-            r = '\r加载进度：[%s%s]%d%%' % ("#" * number, " " * (20 - number), rate_num,)
+            r = '\r载入音频数据进度：[%s%s]%d%%' % ("#" * number, " " * (20 - number), rate_num,)
             # 包含end=''作为print()BIF的一个参数，会使该函数关闭“在输出中自动包含换行”的默认行为
             # 其原理是：为end传递一个空字符串，这样print函数不会在字符串末尾添加一个换行符，而是添加一个空字符串
             # 这个只有Python3有用，Python2不支持。
@@ -130,13 +130,15 @@ def wav_to_mcep_file(dataset: str, sr=SAMPLE_RATE, processed_filepath: str = './
     shutil.rmtree(processed_filepath)
     # 再调用os.makedirs递归重新创建预处理文件夹
     os.makedirs(processed_filepath, exist_ok=True)
+    print("创建processed文件夹用来保存音频数据")
     # 遍历speakers文件夹，再遍历对应的发音者文件夹中的所有文件，计算得到音频总数
     global allwavs_cnt
     allwavs_cnt = len(glob.glob(f'{dataset}/*/*.wav'))
-    print(f'总共{allwavs_cnt}个音频文件！')
+    print(f'speakers文件夹总共{allwavs_cnt}个音频文件！')
     # 调用自定义的load_wavs方法加载对应的wav格式数据
     d = load_wavs(dataset, sr)
     # 通过.keys方法获取d中对象的键名，既发音者的所有标签
+    print("进入processed文件夹")
     for one_speaker in d.keys():
         # 通过values获取d中所对应标签的数据，既音频数据
         values_of_one_speaker = list(d[one_speaker].values())
@@ -166,9 +168,9 @@ def wav_to_mcep_file(dataset: str, sr=SAMPLE_RATE, processed_filepath: str = './
             # 设置对应的路由
             file_path_z = os.path.join(processed_filepath, newname)
             # np.savez保存多个数组到同一个二进制的npz文件中，第一个参数为保存路由，后面的参数为保存的数据
-            # 这里会保存f0数据数组和转置过的编码频谱包络数组，对应键名为f0和coded_sp
+            # 这里npz文件会保存完整的f0数据数组和转置过的编码频谱包络数组，对应键名为f0和coded_sp
             np.savez(file_path_z, f0=f0, coded_sp=coded_sp)
-            print(f'[保存npz文件]：{file_path_z}', end=' ')
+            print(f'[保存基频与包络文件]：{file_path_z}.npz', end=' ')
 
             # 处理转置过的编码频谱包络，因为这个数据一行为同一个特征值，所以按[1]即第二维计算每一个样本数据，以采样点数为截取步长
             # 且会被处理的coded_sp数据对应特征的样本量必须大于采样数，否则不会被处理
@@ -183,7 +185,8 @@ def wav_to_mcep_file(dataset: str, sr=SAMPLE_RATE, processed_filepath: str = './
                     filePath = os.path.join(processed_filepath, temp_name)
                     # np.save将一个矩阵保存到对应npy文件，格式为二进制，参数为路由，一个ndarray矩阵
                     np.save(filePath, one_audio_seg)
-                    print(f'[保存npy文件]：{filePath}', end=' ')
+                    print(f'[保存切割包络文件]：{filePath}.npy', end=' ')
+                    # 这里会保存根据采样率分割过的音频频谱包络数据
             print('')
 
 
@@ -241,6 +244,7 @@ if __name__ == "__main__":
     generator = GenerateStatistics(output_dir)
     # 调用这个实例的方法generate_stats新建etc文件夹将对应发音者数据处理值保存为...-stats的npz文件
     generator.generate_stats()
+    # 调用normalize_dataset方法对processed的npy文件进行归一化
     generator.normalize_dataset()
     end = datetime.now()
-    print(f"[程序运行时间]: {end - start}")
+    print(f"[预处理程序运行时间]: {end - start}")

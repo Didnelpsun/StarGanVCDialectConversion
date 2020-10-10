@@ -75,12 +75,12 @@ class CommonInfo(metaclass=Singleton):
 speakers = CommonInfo('data/speakers').speakers
 
 
-# 个性归一化准化方法
+# 个性归一化准化方法，包含多个归一化操作
 class Normalizer(object):
     """获取归一化的方法"""
-    # 默认的归一化，路由为etc文件夹
+    # 默认的归一化处理对象，路由为etc文件夹
     def __init__(self, statfolderpath: str = './etc'):
-        # 定义文件集初始路由
+        # 定义文件集初始路由，默认为etc文件夹
         self.folderpath = statfolderpath
         # 将自定义的normalizer_dict方法所返回的数据字典作为属性赋值给类
         self.norm_dict = self.normalizer_dict()
@@ -97,7 +97,6 @@ class Normalizer(object):
         std = np.reshape(std, [-1, 1])
         # 将输入值先减去平均值再除以标准差
         x = (x - mean) / std
-
         return x
 
     # 向后处理
@@ -109,7 +108,6 @@ class Normalizer(object):
         std = np.reshape(std, [-1, 1])
         # 将输入值先乘上标准差再加上平均值
         x = x * std + mean
-
         return x
 
     # 返回一个发音者名对应发音者音频数据的字典
@@ -124,14 +122,12 @@ class Normalizer(object):
                 # 根据路径取出对应的文件，如果遍历的子对象在对应的文件集中，就再取出作为文件路由
                 stat_filepath = [fn for fn in glob.glob(p) if one_speaker in fn][0]
             except:
-                # 如果没有找到对应的文件就报错
+                # 如果没有找到对应的文件就抛出异常
                 raise Exception('====找不到对应的文件！====')
-            # print(f'[load]: {stat_filepath}')
             # 找到路由对应文件就加载该文件
             t = np.load(stat_filepath)
-            # 并以对象的发音者名:音频文件作为存储方式来存储到字典中
+            # 并以对象的发音者名:处理过的etc数据文件作为存储方式来存储到字典中
             d[one_speaker] = t
-
         return d
 
     # 音频转换函数，采用对数方式
@@ -209,6 +205,7 @@ class GenerateStatistics(object):
         print(log_f0s_mean, log_f0s_std)
         return log_f0s_mean, log_f0s_std
 
+    # 建立一个etc文件夹，用来对每一个发音者的基频数据组与编码频谱包络组进行求平均值和标准差操作并保存为文件
     def generate_stats(self, statfolder: str = 'etc'):
         """
         生成归一化的对于所有用户使用过的统计数据
@@ -222,6 +219,7 @@ class GenerateStatistics(object):
         # os.makedirs用于创建目录文件夹，这个方法如果父文件集都不存在则会一同创建
         # exist_ok=True表示当要创建的文件夹已经存在时不会抛出OSError错误
         # 这里会在该项目一级目录下创建一个etc文件夹与data文件夹同级
+        print("创建或进入etc文件夹")
         os.makedirs(etc_path, exist_ok=True)
         # .keys()以列表的形式返回一个字典的所有键名
         # 遍历所有的保存npz格式文件的字典include_dict_npz属性的键名
@@ -250,7 +248,7 @@ class GenerateStatistics(object):
             log_f0s_mean, log_f0s_std = self.logf0_statistics(f0s)
             coded_sps_mean, coded_sps_std = self.coded_sp_statistics(coded_sps)
             # 打印对应数据
-            print(f'[{one_speaker}] 对数化基频F0组平均值为：{log_f0s_mean}，对数化基频FO组标准差值为：{log_f0s_std}', end='，')
+            print(f'[{one_speaker}] 对数化基频组平均值为：{log_f0s_mean}，对数化基频组标准差值为：{log_f0s_std}', end='，')
             print(f'编码频谱包络组平均值形状为：{coded_sps_mean.shape}，编码频谱包络组标准差形状为：{coded_sps_std.shape}')
             # 将文件名命名为etc文件夹名/one_speaker变量值-stats.npz
             filename = os.path.join(etc_path, f'{one_speaker}-stats.npz')
@@ -259,27 +257,33 @@ class GenerateStatistics(object):
             np.savez(filename,
                      log_f0s_mean=log_f0s_mean, log_f0s_std=log_f0s_std,
                      coded_sps_mean=coded_sps_mean, coded_sps_std=coded_sps_std)
-            print(f'[保存处理过的npz文件]: {filename}')
+            print(f'[保存处理过的基频与包络文件]: {filename}.npz')
 
+    # 对数据集进行归一化操作
     def normalize_dataset(self):
         """运行一次归一化数据集"""
+        # 定义一个归一化处理类
         norm = Normalizer()
-        # 寻找npy数据集文件
+        # librosa.util.find_files获取目录或目录子树中（音频）文件的排序列表
+        # 第一个参数为路径，ext表示要包含在搜索中的文件扩展名或文件扩展名列表
+        # 在processed文件夹寻找npy数据集文件
         files = librosa.util.find_files(self.folder, ext='npy')
         # 遍历文件
+        print("进入processed文件夹")
         for p in files:
-            # 截取文件名
+            # os.path.basename截取文件名
             filename = os.path.basename(p)
             # 根据文件命名方式获取speaker名
             speaker = filename.split(sep='_', maxsplit=1)[0]
+            # 定义数据为梅尔倒谱系数
             mcep = np.load(p)
-            # 调用自定义方法对于mcep文件进行计算
+            # 调用自定义方法对于mcep文件进行计算，从etc文件中取出对应的数据对原有processed文件夹的npy文件进行计算
             mcep_normed = norm.forward_process(mcep, speaker)
-            # os.remove用于删除指定文件
+            # os.remove用于删除指定文件，即将原来的npy文件删掉
             os.remove(p)
             # 将格式化好的数据放入原来路径中
             np.save(p, mcep_normed)
-            print(f'[normalize]:{p}')
+            print(f'[归一化频谱包络]：{p}.npy')
 
 
 # 当调用形式为调用main，就跳过这个文件
