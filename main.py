@@ -13,8 +13,9 @@ def str2bool(v):
 
 def main(config):
     # 目的是为了快速训练
+    # Benchmark模式会提升计算速度，但是由于计算中有随机性，每次网络前馈结果略有差异
+    # 大部分情况下，设置这个flag可以让内置的cuDNN的auto-tuner自动寻找最适合当前配置的高效算法，来达到优化运行效率的问题。
     cudnn.benchmark = True
-
     # 如果目录不存在就创建目录
     if not os.path.exists(config.log_dir):
         os.makedirs(config.log_dir)
@@ -24,18 +25,16 @@ def main(config):
         os.makedirs(config.sample_dir)
     if not os.path.exists(config.result_dir):
         os.makedirs(config.result_dir)
-
     # 数据加载器
-
+    # 调用自定义的数据加载器加载对应的数据
     dloader = data_loader(config.data_dir, batch_size=config.batch_size, mode=config.mode,
                           num_workers=config.num_workers)
 
-    # 为训练和测试StarGAN的Solver类
+    # 为训练和测试StarGAN的Solver类，传入数据加载器与配置
     solver = Solver(dloader, config)
-
+    # 当模式为训练的时候就调用train方法进行训练，否则调用test方法进行测试
     if config.mode == 'train':
         solver.train()
-
     elif config.mode == 'test':
         solver.test()
 
@@ -69,11 +68,17 @@ if __name__ == '__main__':
     parser.add_argument('--use_tensorboard', type=str2bool, default=True)
 
     # 目录
+    # 数据目录
     parser.add_argument('--data_dir', type=str, default='data/processed')
+    # 测试目录
     parser.add_argument('--test_dir', type=str, default='data/speakers_test')
+    # 记录目录
     parser.add_argument('--log_dir', type=str, default='starganvc/logs')
+    # 模型保存目录
     parser.add_argument('--model_save_dir', type=str, default='starganvc/models')
+    # 样本目录
     parser.add_argument('--sample_dir', type=str, default='starganvc/samples')
+    # 结果目录
     parser.add_argument('--result_dir', type=str, default='starganvc/results')
 
     # 步长
