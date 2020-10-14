@@ -1,7 +1,7 @@
 # 此文件用于数据载入
 
-import os  # #os库是Python标准库，包含几百个函数,常用路径操作、进程管理、环境参数等几类。os.path子库以path为入口，用于操作和处理文件路径。
-
+# #os库是Python标准库，包含几百个函数,常用路径操作、进程管理、环境参数等几类。os.path子库以path为入口，用于操作和处理文件路径。
+import os
 # Python音频信号处理库函数librosa，提供了创建音乐信息检索系统所需的构建块
 import librosa
 # 数据分析模块numpy
@@ -11,6 +11,7 @@ import torch
 # sklearn是基础机器学习库，preprocessing为预处理库，LabelBinarizer用以one-hot编码转变，用以标签二值化，即将一般数据如真假值
 # 13534等数据变为01组合
 from sklearn.preprocessing import LabelBinarizer
+
 # DataLoader为数据加载器，本身是一个可迭代对象，使用iter()访问，不能使用next()访问，
 # 也可以使用iter(dataloader)返回的是一个迭代器，然后可以使用next访问
 # 并利用多进程来加速batch data的处理，使用yield来使用有限的内存
@@ -22,18 +23,18 @@ from sklearn.preprocessing import LabelBinarizer
 from torch.utils.data.dataloader import DataLoader
 from torch.utils.data.dataset import Dataset
 
-# 从预处理库中进入对应的音频预处理对象，用于将数据转换为音频数据
+# 从自定义的预处理文件中进入对应的音频预处理对象，用于将数据转换为音频数据
 from preprocess import (FEATURE_DIM, FFTSIZE, FRAMES, SAMPLE_RATE, world_features)
-# utility为个人定义工具集库，Normalizer为归一化对象，speakers为发音者对象，处理不同发音人
+# utility为个人定义工具集库，Normalizer为归一化类，speakers为发音者实例对象，包含所有的发音者标签
 from utility import Normalizer, speakers
 # random为随机数库，用来生成随机数
 import random
 
 
 # 构建音频数据集，将数据集输入转换为音频数据集
+# 继承Dataset类
 class AudioDataset(Dataset):
     """对音频数据集的的说明"""
-
     # 初始化音频数据，datadir为数据集文件路由
     # 并定义音频数据集对象所拥有的方法与属性
     def __init__(self, datadir: str):
@@ -44,11 +45,13 @@ class AudioDataset(Dataset):
         # librosa.util.find_files获取目录或目录子树中已排序的(音频)文件列表
         # 找到对应音频模型数据文件，ext表示后缀，npy就是其后缀，npy文件由python程序将数据处理而成，只能由python来解析
         # files为对象的根据路由获取npy结尾的数据集的方法
+        # 这里会获取processed文件夹中的所有npy文件
         self.files = librosa.util.find_files(datadir, ext='npy')
         # 将spearkers对象使用LabelBinarizer的fit方法来变为one-hot数据作为编码器，即域标签。
-        # encoder为对象将发音者特征转化为one-hot特征值方法
+        # encoder为对象将发音者标签列表转化为one-hot特征值方法
         self.encoder = LabelBinarizer().fit(speakers)
 
+    # 重写了Dataset类的__getitem__方法作为取数据的方法
     def __getitem__(self, idx):
         # p为根据idx路由获取到对应的npy结尾数据集
         p = self.files[idx]
@@ -81,7 +84,7 @@ class AudioDataset(Dataset):
         return len(self.files)
 
 
-# 调用数据集的文件数据载入方法，datadir为数据集文件路由，批处理每次的并行数据为4条，进行shuffle操作，模式为训练
+# 调用数据集的文件数据载入方法，datadir为数据集文件路由，批处理每次的并行数据为4条，进行shuffle操作，模式为训练，并行数为2
 # shuffile操作是针对处理大量和多进程操作时，为了优化网络和IO操作的处理方式，即对数据进行分区与合并加快数据处理，代价很大
 # 使用两个子进程处理数据
 def data_loader(datadir: str, batch_size=4, shuffle=True, mode='train', num_workers=2):
@@ -90,7 +93,10 @@ def data_loader(datadir: str, batch_size=4, shuffle=True, mode='train', num_work
     """
 
     # 调用之前定义的转换音频数据集的方法AudioDataset将对应文件路由转换为可处理的数据集
+    # 默认datadir为processed文件夹
+    # 这里只初始化这个实例
     dataset = AudioDataset(datadir)
+    # 返回这个DataLoader实例
     loader = DataLoader(dataset, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers)
     # 返回文件加载器
     return loader
@@ -141,14 +147,17 @@ class TestSet(object):
             # offset ：float，在此时间之后开始阅读（以秒为单位）
             # duration：float，仅加载这么多的音频（以秒为单位）
             wav, _ = librosa.load(f, sr=SAMPLE_RATE, dtype=np.float64)
+            # 使用自定义的world_features获取对应的wav数据
             f0, timeaxis, sp, ap, coded_sp = world_features(wav, SAMPLE_RATE, FFTSIZE, FEATURE_DIM)
+            # 调用自定义的forward_process方法对编码频谱包络进行处理
             coded_sp_norm = self.norm.forward_process(coded_sp.T, r_s)
-
+            # 将res添加对应的字典值，第一维键名为文件名
             if not res.__contains__(filename):
                 res[filename] = {}
             res[filename]['coded_sp_norm'] = np.asarray(coded_sp_norm)
             res[filename]['f0'] = np.asarray(f0)
             res[filename]['ap'] = np.asarray(ap)
+        # 返回处理后的数据字典与目标发音者标签
         return res, r_s
 
 

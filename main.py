@@ -2,6 +2,7 @@
 
 import os
 import argparse
+# 引入定义的两个自定义文件
 from solver import Solver
 from data_loader import data_loader
 from torch.backends import cudnn
@@ -26,10 +27,9 @@ def main(config):
     if not os.path.exists(config.result_dir):
         os.makedirs(config.result_dir)
     # 数据加载器
-    # 调用自定义的数据加载器加载对应的数据
+    # 调用自定义的数据加载器方法加载对应的数据
     dloader = data_loader(config.data_dir, batch_size=config.batch_size, mode=config.mode,
                           num_workers=config.num_workers)
-
     # 为训练和测试StarGAN的Solver类，传入数据加载器与配置
     solver = Solver(dloader, config)
     # 当模式为训练的时候就调用train方法进行训练，否则调用test方法进行测试
