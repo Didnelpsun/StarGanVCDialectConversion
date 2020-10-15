@@ -111,24 +111,25 @@ class TestSet(object):
         # 定义对象norm方法为数据正则化方法
         self.norm = Normalizer()
 
+    # 随机选取发音者方法
     def choose(self):
-        '''为测试数据选择一个发音者'''
+        """为测试数据选择一个发音者"""
 
         # 根据speakers这个序列中随机取出一个speaker作为目标发音者
         r = random.choice(speakers)
         return r
 
-    # 默认目标发音者为空值
+    # 默认源发音者为空值
     def test_data(self, src_speaker=None):
-        '''为转换数据选择一个发音者'''
-        # 如果传入了目标发音者，即将这个参数赋值给r_s变量
+        """为转换数据选择一个发音者"""
+        # 如果传入了源发音者，即将这个参数赋值给r_s变量
         if src_speaker:
             r_s = src_speaker
         # 如果没有参数传入
         else:
             # 就自动调用对象的choose方法随机选取一个发音者
             r_s = self.choose()
-        # 将这个目标发音者的名称和原本的数据集地址拼接在一起作为新路径
+        # 将这个源发音者的名称和原本的数据集地址拼接在一起作为新路径
         # 因为这个数据集是以发音者的名字作为子集的，所以要找到对应发音者的子数据集必须这样处理
         # 如果采用不同的数据集命名方式那么处理方式就会不同
         p = os.path.join(self.datadir, r_s)

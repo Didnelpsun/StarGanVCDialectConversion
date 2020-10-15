@@ -10,6 +10,7 @@ class Down2d(nn.Module):
     """将降维为二维方法的说明"""
     # 初始化，参数为输入信道数，输出信道数，卷积核数，步长，填充层数，即对输入的每一条边，补充0的层数
     def __init__(self, in_channel, out_channel, kernel, stride, padding):
+        # 调用父方法init方法初始化
         super(Down2d, self).__init__()
         # nn.Conv2d用于构建二维卷积，针对图像之类的数据，对宽度和高度都进行卷积
         self.c1 = nn.Conv2d(in_channel, out_channel, kernel_size=kernel, stride=stride, padding=padding)
@@ -41,6 +42,7 @@ class Up2d(nn.Module):
         self.n1 = nn.InstanceNorm2d(out_channel)
         self.c2 = nn.ConvTranspose2d(in_channel, out_channel, kernel_size=kernel, stride=stride, padding=padding)
         self.n2 = nn.InstanceNorm2d(out_channel)
+
     # 再进行逆卷积与归一化操作，并利用sigmoid函数转换
     def forward(self, x):
         x1 = self.c1(x)
@@ -107,7 +109,6 @@ class Generator(nn.Module):
         return x
 
 
-
 # 判别器模型
 class Discriminator(nn.Module):
     """判别器的说明"""
@@ -125,6 +126,7 @@ class Discriminator(nn.Module):
         self.pool = nn.AvgPool2d((1, 64))
 
     def forward(self, x, c):
+        # 将c改变形状
         c = c.view(c.size(0), c.size(1), 1, 1)
 
         c1 = c.repeat(1, 1, x.size(2), x.size(3))

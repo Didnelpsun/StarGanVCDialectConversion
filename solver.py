@@ -20,6 +20,7 @@ import librosa
 import ast
 
 
+# 解决方法类，主要为了进行处理模型
 class Solver(object):
     """训练操作的说明"""
     #  参数为数据加载器与配置
@@ -28,7 +29,7 @@ class Solver(object):
         self.config = config
         self.data_loader = data_loader
         # 模型配置
-        # 赋值三个损失函数，循环损失，域分类损失，身份映射损失
+        # 赋值三个损失函数，循环损失，域分类损失，身份映射损失的衡量参数
         self.lambda_cycle = config.lambda_cycle
         self.lambda_cls = config.lambda_cls
         self.lambda_identity = config.lambda_identity
@@ -40,18 +41,26 @@ class Solver(object):
         self.test_dir = config.test_dir
         # 批处理大小
         self.batch_size = config.batch_size
+        # 训练判别器D的总迭代次数
         self.num_iters = config.num_iters
+        # 衰减学习率的迭代次数
         self.num_iters_decay = config.num_iters_decay
+        # 生成器G的学习频率
         self.g_lr = config.g_lr
+        # 判别器D的学习频率
         self.d_lr = config.d_lr
+        # 域分类器C的学习频率
         self.c_lr = config.c_lr
+        # 每次G更新时的D更新次数
         self.n_critic = config.n_critic
+        # Adam优化器的beta1，2参数
         self.beta1 = config.beta1
         self.beta2 = config.beta2
+        # 从此步骤恢复培训
         self.resume_iters = config.resume_iters
-        
 
         # 测试配置
+        # 从这个步骤开始训练模型
         self.test_iters = config.test_iters
         # ast.literal_eval为解析函数，并安全地进行类型转换
         # 目标发音者
@@ -65,30 +74,37 @@ class Solver(object):
         # torch.device代表将torch.Tensor分配到的设备的对象。torch.device包含一个设备类型（‘cpu’或‘cuda’）和可选的设备序号。
         # 是使用cuda还是cpu计算
         self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-        # 将speakers标签二值化
+        # 将speakers标签列表二值化
         self.spk_enc = LabelBinarizer().fit(speakers)
         # 字典
-        # 记录字典
+        # 记录目录
         self.log_dir = config.log_dir
-        # 样本字典
+        # 样本目录
         self.sample_dir = config.sample_dir
-        # 模型字典
+        # 模型目录
         self.model_save_dir = config.model_save_dir
-        # 输出字典
+        # 输出目录
         self.result_dir = config.result_dir
 
         # 步长
+        # 记录步长
         self.log_step = config.log_step
+        # 采样步长
         self.sample_step = config.sample_step
+        # 模型保存间隔步长
         self.model_save_step = config.model_save_step
+        # 学习率更新步长
         self.lr_update_step = config.lr_update_step
 
         # 建立模型与tensorboard.
         self.build_model()
         if self.use_tensorboard:
+            # 使用tensorboard记录器
             self.build_tensorboard()
+
     # 赋值三个模型器
     def build_model(self):
+        # 将模型赋值给类属性
         self.G = Generator()
         self.D = Discriminator()
         self.C = DomainClassifier()
@@ -104,7 +120,7 @@ class Solver(object):
         # beta1：一阶矩估计的指数衰减率（如 0.9）。
         # beta2：二阶矩估计的指数衰减率（如 0.999）。该超参数在稀疏梯度（如在 NLP 或计算机视觉任务中）中应该设置为接近 1 的数。
         # eps (float, 可选) – 为了增加数值计算的稳定性而加到分母里的项（默认：1e-8）epsilon：该参数是非常小的数，其为了防止在实现中除以零（如 10E-8）。
-        # weight_decay (float, 可选) – 权重衰减（L2惩罚）（默认: 0）
+        # weight_decay (float, 可选) – 权重衰减（L2级惩罚）（默认: 0）
  
         self.g_optimizer = torch.optim.Adam(self.G.parameters(), self.g_lr, [self.beta1, self.beta2])
         self.d_optimizer = torch.optim.Adam(self.D.parameters(), self.d_lr, [self.beta1, self.beta2])
@@ -128,11 +144,12 @@ class Solver(object):
             num_params += p.numel()
         print(model)
         print(name)
-        print("The number of parameters: {}".format(num_params))
+        print("参数的个数为：{}".format(num_params))
     # 使用tensorboard
     def build_tensorboard(self):
         """建立一个tensorboard记录器"""
         from logger import Logger
+        # 建立一个记录器，传入记录地址
         self.logger = Logger(self.log_dir)
 
     def update_lr(self, g_lr, d_lr, c_lr):
@@ -144,12 +161,13 @@ class Solver(object):
         for param_group in self.c_optimizer.param_groups:
             param_group['lr'] = c_lr
 
+    # 训练方法
     def train(self):
         # 衰减的学习率缓存
         g_lr = self.g_lr
         d_lr = self.d_lr
         c_lr = self.c_lr
-
+        # 开始训练步骤数为0
         start_iters = 0
         # 如果存在就跳过
         if self.resume_iters:
@@ -158,10 +176,10 @@ class Solver(object):
         norm = Normalizer()
         # iter用来生成迭代器，这里用来迭代加载数据集
         data_iter = iter(self.data_loader)
-        print('Start training......')
+        print('开始训练......')
         # 记录当前时间，now函数取当前时间
         start_time = datetime.now()
-
+        # 利用总迭代次数来进行遍历
         for i in range(start_iters, self.num_iters):
             # =================================================================================== #
             #                                 1.预处理输入数据                                    #
@@ -169,7 +187,7 @@ class Solver(object):
             # 获取真实的图像和对应标签标签
             try:
                 # next方法为迭代下一个迭代器
-                # 利用自定义的加载器获取真实x值，发音者数据与源标签
+                # 利用自定义的加载器获取真实x值，发音者标签在组中索引与源标签
                 x_real, speaker_idx_org, label_org = next(data_iter)
             except:
                 # 如果迭代器有问题就再转换为迭代器一次然后迭代
@@ -178,17 +196,19 @@ class Solver(object):
 
             # 随机生成目标域标签
             # torch.randperm返回一个从0到参数-1范围的随机数组
+            # 因为标签二值化了，所以这里的标签是10组成的，所以一共有label_org.size(0)个标签
+            # 获得的是随机索引
             rand_idx = torch.randperm(label_org.size(0))
-            # 根据随机数组作为源标签的索引，打乱标签数组作为目标标签数组
+            # 根据随机数作为源标签的索引作为目标标签数
             label_trg = label_org[rand_idx]
-            # 同理得到随机发音者数组
+            # 同理得到随机目标发音者
             speaker_idx_trg = speaker_idx_org[rand_idx]
-            
+            # to表示使用cpu或者gpu运行
             x_real = x_real.to(self.device)           # 输入数据
             label_org = label_org.to(self.device)     # 源域one-hot格式标签
             label_trg = label_trg.to(self.device)     # 目标域ont-hot格式标签
-            speaker_idx_org = speaker_idx_org.to(self.device) # 源域标签
-            speaker_idx_trg = speaker_idx_trg.to(self.device) # 目标域标签
+            speaker_idx_org = speaker_idx_org.to(self.device)  # 源域标签
+            speaker_idx_trg = speaker_idx_trg.to(self.device)  # 目标域标签
 
             # =================================================================================== #
             #                                      2.训练判别器                                   #
@@ -296,7 +316,7 @@ class Solver(object):
                 # 更新生成器参数
                 self.g_optimizer.step()
 
-                # 记录
+                # 记录对应的损失
                 loss['G/loss_fake'] = g_loss_fake.item()
                 loss['G/loss_rec'] = g_loss_rec.item()
                 loss['G/loss_cls'] = g_loss_cls.item()
@@ -312,7 +332,7 @@ class Solver(object):
                 # 截取后面的时间段
                 et = str(et)[:-7]
                 # 耗时与迭代次数
-                log = "Elapsed [{}], Iteration [{}/{}]".format(et, i+1, self.num_iters)
+                log = "耗时：[{}], 迭代次数：[{}/{}]".format(et, i+1, self.num_iters)
                 # 打印对应损失值
                 for tag, value in loss.items():
                     log += ", {}: {:.4f}".format(tag, value)
@@ -411,7 +431,7 @@ class Solver(object):
 
     def restore_model(self, resume_iters):
         """重置训练好的发生器和鉴别器"""
-        print('Loading the trained models from step {}...'.format(resume_iters))
+        print('从{}步骤开始加载训练过的模型...'.format(resume_iters))
         G_path = os.path.join(self.model_save_dir, '{}-G.ckpt'.format(resume_iters))
         D_path = os.path.join(self.model_save_dir, '{}-D.ckpt'.format(resume_iters))
         C_path = os.path.join(self.model_save_dir, '{}-C.ckpt'.format(resume_iters))

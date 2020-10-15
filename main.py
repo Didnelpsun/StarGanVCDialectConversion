@@ -48,8 +48,8 @@ if __name__ == '__main__':
     parser.add_argument('--lambda_identity', type=float, default=2, help='身份一致性损失的权值')
     # 训练配置
     parser.add_argument('--batch_size', type=int, default=4, help='设置最小批处理大小')
-    parser.add_argument('--num_iters', type=int, default=200000, help='训练判别器D的总迭代次数')
-    parser.add_argument('--num_iters_decay', type=int, default=100000, help='衰减lr的迭代次数')
+    parser.add_argument('--num_iters', type=int, default=200000, help='训练的总迭代次数')
+    parser.add_argument('--num_iters_decay', type=int, default=100000, help='衰减学习率的迭代次数')
     parser.add_argument('--g_lr', type=float, default=0.0001, help='生成器G的学习频率')
     parser.add_argument('--d_lr', type=float, default=0.0001, help='判别器D的学习频率')
     parser.add_argument('--c_lr', type=float, default=0.0001, help='域分类器C的学习频率')
