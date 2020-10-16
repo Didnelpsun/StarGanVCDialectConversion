@@ -119,10 +119,11 @@ class Normalizer(object):
             # 将数据路由后加上*.npz表示取出该目录默认etc下所有的npz类型文件
             p = os.path.join(self.folderpath, '*.npz')
             try:
-                # 根据路径取出对应的文件，如果遍历的子对象在对应的文件集中，就再取出作为文件路由
+                # 根据路径取出对应的文件，如果遍历的子对象在对应的文件集中，就再取出作为文件路由，因为只有一个数据，所以取[0]
                 stat_filepath = [fn for fn in glob.glob(p) if one_speaker in fn][0]
             except:
                 # 如果没有找到对应的文件就抛出异常
+                # 这里就是判断对应的标签etc文件夹下是否有对应的npz文件
                 raise Exception('====找不到对应的文件！====')
             # 找到路由对应文件就加载该文件
             t = np.load(stat_filepath)
@@ -147,7 +148,7 @@ class Normalizer(object):
         # 当掩码中某个元素值为False，那么关联数组的对应元素是有效的，即被认为是未掩码的。
         # 当掩码中某个元素值为True，那么关联数组的对应元素是无效的，即被认为是掩码的
 
-        # log就是取对数方法
+        # exp为幂方法，log就是取对数方法
         f0_converted = np.exp((np.ma.log(f0) - mean_log_src) / std_log_src * std_log_target + mean_log_target)
         # 返回转换结果
         return f0_converted
