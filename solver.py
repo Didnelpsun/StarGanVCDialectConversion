@@ -364,7 +364,7 @@ class Solver(object):
                         ap = content['ap']
                         # 调用自定义方法处理对应的数据
                         sp_norm_pad = self.pad_coded_sp(content['coded_sp_norm'])
-                        
+
                         convert_result = []
                         for start_idx in range(0, sp_norm_pad.shape[1] - FRAMES + 1, FRAMES):
                             one_seg = sp_norm_pad[:, start_idx : start_idx+FRAMES]
@@ -496,9 +496,8 @@ class Solver(object):
 
                     name = f'{speaker}-{target}_iter{self.test_iters}_{filename}'
                     path = os.path.join(self.result_dir, name)
-                    print(f'[save]:{path}')
+                    print(f'[保存]:{path}')
                     librosa.output.write_wav(path, wav, SAMPLE_RATE)            
-
 
     
 # 如果执行模式为main就跳过这个文件
