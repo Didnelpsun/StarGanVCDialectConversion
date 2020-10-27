@@ -130,6 +130,7 @@ class Solver(object):
         self.print_network(self.D, 'D')
         self.print_network(self.C, 'C')
         # Module.to方法用来移动和转换参数与缓冲区，类似于torch.Tensor.to，但是仅支持float类型
+        # 这里将模型转移到GPU运算
         self.G.to(self.device)
         self.D.to(self.device)
         self.C.to(self.device)

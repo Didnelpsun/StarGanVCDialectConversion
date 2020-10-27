@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 
 
-# 自定义模型需要继承nn.Module来实现
+# 自定义模型需要继承nn.Module来实现，下采样网络
 class Down2d(nn.Module):
     """将降维为二维方法的说明"""
     # 初始化，参数为输入信道数，输出信道数，卷积核数，步长，填充层数，即对输入的每一条边，补充0的层数
@@ -14,7 +14,7 @@ class Down2d(nn.Module):
         super(Down2d, self).__init__()
         # nn.Conv2d用于构建二维卷积，针对图像之类的数据，对宽度和高度都进行卷积
         self.c1 = nn.Conv2d(in_channel, out_channel, kernel_size=kernel, stride=stride, padding=padding)
-        # InstanceNorm2dinstanceNorm在图像像素上，对HW做归一化
+        # InstanceNorm2dinstanceNorm在图像像素上，对HW做归一化，归一化层
         # 即是对batch中的单个样本的每一层特征图抽出来一层层求mean和variance，与batch size无关
         # 若特征层为1，即C=1，准则instance norm的值为输入本身
         self.n1 = nn.InstanceNorm2d(out_channel)
@@ -27,11 +27,12 @@ class Down2d(nn.Module):
         x1 = self.n1(x1)
         x2 = self.c2(x)
         x2 = self.n2(x2)
-        # torch.sigmoid为sigmoid函数转换
+        # torch.sigmoid为sigmoid函数转换，激活
         x3 = x1 * torch.sigmoid(x2)
         return x3
 
 
+# 上采样网络
 class Up2d(nn.Module):
     """将升维为二维方法的说明"""
 
@@ -43,7 +44,7 @@ class Up2d(nn.Module):
         self.c2 = nn.ConvTranspose2d(in_channel, out_channel, kernel_size=kernel, stride=stride, padding=padding)
         self.n2 = nn.InstanceNorm2d(out_channel)
 
-    # 再进行逆卷积与归一化操作，并利用sigmoid函数转换
+    # 再进行逆卷积与归一化操作，并利用sigmoid函数转换激活
     def forward(self, x):
         x1 = self.c1(x)
         x1 = self.n1(x1)
