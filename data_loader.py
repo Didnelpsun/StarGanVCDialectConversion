@@ -183,11 +183,10 @@ if __name__ == '__main__':
     #     coded_sp_norm = np.hstack((coded_sp_norm, np.zeros((coded_sp_norm.shape[0], pad_length))))
     #     print('after:' , coded_sp_norm.shape)
     # print(t[1])
-    ad = AudioDataset('./data/processed')
-    print(len(ad))
-
-    data, s, label = ad[500]
-    print(data, label)
+    data_iter = iter(iter(data_loader('./data/processed')))
+    for i in range(0,5):
+        x_real, speaker_idx_org, label_org = next(data_iter)
+        print(x_real,speaker_idx_org,label_org)
     # loader = data_loader('./data/processed', batch_size=4)   
 
     # for i_batch, batch_data in enumerate(loader):
