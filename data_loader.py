@@ -73,6 +73,7 @@ class AudioDataset(Dataset):
         # 对应的FloatTensor方法将数据变为FloatTensor
         # 所以最后返回的数据为解压的音频数据集mecp，转换为LongTensor类型的名为speaker变量的speakers值（按键值对的键值取出）
         # 以及转换为FloatTensor类型的标签
+        # index() 方法从字符串中找出某个子字符串第一个匹配项的索引位置，该方法与 find() 方法一样，只不过如果子字符串不在字符串中会报一个异常。
         return mcep, torch.tensor(speakers.index(speaker), dtype=torch.long), torch.FloatTensor(label)
 
     # speaker_encoder返回数据集的解码器，即域标签
