@@ -121,11 +121,11 @@ class Solver(object):
         # beta2：二阶矩估计的指数衰减率（如 0.999）。该超参数在稀疏梯度（如在 NLP 或计算机视觉任务中）中应该设置为接近 1 的数。
         # eps (float, 可选) – 为了增加数值计算的稳定性而加到分母里的项（默认：1e-8）epsilon：该参数是非常小的数，其为了防止在实现中除以零（如 10E-8）。
         # weight_decay (float, 可选) – 权重衰减（L2级惩罚）（默认: 0）
- 
+
         self.g_optimizer = torch.optim.Adam(self.G.parameters(), self.g_lr, [self.beta1, self.beta2])
         self.d_optimizer = torch.optim.Adam(self.D.parameters(), self.d_lr, [self.beta1, self.beta2])
         self.c_optimizer = torch.optim.Adam(self.C.parameters(), self.c_lr,[self.beta1, self.beta2])
-        
+
         self.print_network(self.G, 'G')
         self.print_network(self.D, 'D')
         self.print_network(self.C, 'C')
@@ -134,7 +134,7 @@ class Solver(object):
         self.G.to(self.device)
         self.D.to(self.device)
         self.C.to(self.device)
-    
+
     def print_network(self, model, name):
         """打印出网络的相关信息"""
         num_params = 0
@@ -193,7 +193,7 @@ class Solver(object):
             except:
                 # 如果迭代器有问题就再转换为迭代器一次然后迭代
                 data_iter = iter(self.data_loader)
-                x_real, speaker_idx_org, label_org = next(data_iter)           
+                x_real, speaker_idx_org, label_org = next(data_iter)
 
             # 随机生成目标域标签
             # torch.randperm返回一个从0到参数-1范围的随机数组
@@ -227,38 +227,45 @@ class Solver(object):
             cls_loss_real.backward()
             # optimizer.step这个方法会更新模型所有的参数以提升学习率，一般在backward函数后根据其计算的梯度来更新参数
             self.c_optimizer.step()
-             # 记录中
+            # 记录中
             loss = {}
             # 从真实域分类损失张量中获取元素值
             # item()得到一个元素张量里面的元素值
             loss['C/C_loss'] = cls_loss_real.item()
-            # 根据源真实数据与源标签来训练判别器
+
+            # 基于源数据的D判断结果
             out_r = self.D(x_real, label_org)
             # 用假音频帧计算损失
             # 根据真实样本与目标标签生成生成样本
             x_fake = self.G(x_real, label_trg)
             # detach截断反向传播的梯度流，从而让梯度不影响判别器D
+            # 基于生成样本的D判断结果
             out_f = self.D(x_fake.detach(), label_trg)
-            # torch.nn.Function.binary_cross_entropy_with_logits
+            # torch.nn.Function.binary_cross_entropy_with_logits度量目标逻辑和输出逻辑之间的二进制交叉熵的函数
             # 接受任意形状的输入，target要求与输入形状一致。切记：target的值必须在[0,N-1]之间，其中N为类别数，否则会出现莫名其妙的错误，比如loss为负数。
             # 计算其实就是交叉熵，不过输入不要求在0，1之间，该函数会自动添加sigmoid运算
             # 返回一个填充了标量值1的张量，其大小与输入相同。torch.ones_like(input)
             # 相当于torch.ones(input.size(), dtype=input.dtype, layout=input.layout, device=input.device)
-            d_loss_t = F.binary_cross_entropy_with_logits(input=out_f,target=torch.zeros_like(out_f, dtype=torch.float)) + \ 
+
+            # binary_cross_entropy_with_logits和binary_cross_entropy的区别
+            # 有一个（类）损失函数名字中带了with_logits. 而这里的logits指的是,该损失函数已经内部自带了计算logit的操作，
+            # 无需在传入给这个loss函数之前手动使用sigmoid/softmax将之前网络的输入映射到[0,1]之间
+            d_loss_t = F.binary_cross_entropy_with_logits(input=out_f,target=torch.zeros_like(out_f, dtype=torch.float)) + \
                 F.binary_cross_entropy_with_logits(input=out_r, target=torch.ones_like(out_r, dtype=torch.float))
-            # 将生成样本输入域分类器中
+            # 生成样本的分类结果
             out_cls = self.C(x_fake)
-            # 交叉熵计算D的域分类损失
+            # 交叉熵计算生成样本的域分类损失
             d_loss_cls = CELoss(input=out_cls, target=speaker_idx_trg)
 
             # 计算梯度惩罚的损失
             alpha = torch.rand(x_real.size(0), 1, 1, 1).to(self.device)
             # 计算x_hat
             # requires_grad_设置积分方法，将requires_grad是否积分的属性设置为真
+            # 取一个随机数混合真实样本和生成样本得到一个x尖
             x_hat = (alpha * x_real.data + (1 - alpha) * x_fake.data).requires_grad_(True)
-            # 得到输出源
+            # 计算混合样本和目标标签的判别结果
             out_src = self.D(x_hat, label_trg)
-            # 调用自定义方法得到损失
+            # 调用自定义方法得到处理导数后的数据
             d_loss_gp = self.gradient_penalty(out_src, x_hat)
             # 计算判别器的总体损失
             d_loss = d_loss_t + self.lambda_cls * d_loss_cls + 5*d_loss_gp
@@ -268,7 +275,6 @@ class Solver(object):
             d_loss.backward()
             # 更新模型判别器D参数
             self.d_optimizer.step()
-
 
             # loss['D/d_loss_t'] = d_loss_t.item()
             # loss['D/loss_cls'] = d_loss_cls.item()
@@ -298,7 +304,7 @@ class Solver(object):
                 x_reconst = self.G(x_fake, label_org)
                 # 得到循环一致性损失，即通过G转回来的损失，按道理这两个是同样的
                 # l1_loss为L1损失函数，即平均绝对误差
-                g_loss_rec = F.l1_loss(x_reconst, x_real )
+                g_loss_rec = F.l1_loss(x_reconst, x_real)
 
                 # 源到源域(身份一致性损失).
                 # 通过真实样本与源标签生成，按道理也是生成x_real
@@ -369,7 +375,7 @@ class Solver(object):
                         convert_result = []
                         for start_idx in range(0, sp_norm_pad.shape[1] - FRAMES + 1, FRAMES):
                             one_seg = sp_norm_pad[:, start_idx : start_idx+FRAMES]
-                            
+
                             one_seg = torch.FloatTensor(one_seg).to(self.device)
                             one_seg = one_seg.view(1,1,one_seg.size(0), one_seg.size(1))
                             l = torch.FloatTensor(label_t)
@@ -382,7 +388,7 @@ class Solver(object):
 
                         convert_con = np.concatenate(convert_result, axis=1)
                         convert_con = convert_con[:, 0:content['coded_sp_norm'].shape[1]]
-                        contigu = np.ascontiguousarray(convert_con.T, dtype=np.float64)   
+                        contigu = np.ascontiguousarray(convert_con.T, dtype=np.float64)
                         decoded_sp = decode_spectral_envelope(contigu, SAMPLE_RATE, fft_size=FFTSIZE)
                         f0_converted = norm.pitch_conversion(f0, speaker, target)
                         wav = synthesize(f0_converted, decoded_sp, ap, SAMPLE_RATE)
@@ -391,7 +397,7 @@ class Solver(object):
                         path = os.path.join(self.sample_dir, name)
                         print(f'[save]:{path}')
                         librosa.output.write_wav(path, wav, SAMPLE_RATE)
-                        
+
             # 保存模型检查点
             if (i+1) % self.model_save_step == 0:
                 G_path = os.path.join(self.model_save_dir, '{}-G.ckpt'.format(i+1))
@@ -412,15 +418,20 @@ class Solver(object):
 
     def gradient_penalty(self, y, x):
         """计算梯度惩罚: (L2_norm(dy/dx) - 1)**2."""
+        # 根据标签的纬度创建出权重矩阵
         weight = torch.ones(y.size()).to(self.device)
+        # torch.autograd.grad计算并返回outputs对inputs的梯度dy/dx
         dydx = torch.autograd.grad(outputs=y,
                                    inputs=x,
+                                   # 雅可比向量积中的“向量”，用来将梯度向量转换为梯度标量，并可以衡量y梯度的各个数据的权重
                                    grad_outputs=weight,
                                    retain_graph=True,
+                                   # 保持计算的导数图
                                    create_graph=True,
                                    only_inputs=True)[0]
-
+        # 将导数变为二维的数据并保持行数
         dydx = dydx.view(dydx.size(0), -1)
+        # 计算导数的L2范数
         dydx_l2norm = torch.sqrt(torch.sum(dydx**2, dim=1))
         return torch.mean((dydx_l2norm-1)**2)
 
@@ -443,13 +454,13 @@ class Solver(object):
     @staticmethod
     def pad_coded_sp(coded_sp_norm):
         f_len = coded_sp_norm.shape[1]
-        if  f_len >= FRAMES: 
+        if  f_len >= FRAMES:
             pad_length = FRAMES-(f_len - (f_len//FRAMES) * FRAMES)
         elif f_len < FRAMES:
             pad_length = FRAMES - f_len
 
         sp_norm_pad = np.hstack((coded_sp_norm, np.zeros((coded_sp_norm.shape[0], pad_length))))
-        return sp_norm_pad 
+        return sp_norm_pad
 
     def test(self):
         """用StarGAN处理音频数据"""
@@ -460,13 +471,13 @@ class Solver(object):
         # 设置数据加载器
         d, speaker = TestSet(self.test_dir).test_data(self.src_speaker)
         targets = self.trg_speaker
-       
+
         for target in targets:
             print(target)
             assert target in speakers
             label_t = self.spk_enc.transform([target])[0]
             label_t = np.asarray([label_t])
-            
+
             with torch.no_grad():
 
                 for filename, content in d.items():
@@ -477,7 +488,7 @@ class Solver(object):
                     convert_result = []
                     for start_idx in range(0, sp_norm_pad.shape[1] - FRAMES + 1, FRAMES):
                         one_seg = sp_norm_pad[:, start_idx : start_idx+FRAMES]
-                        
+
                         one_seg = torch.FloatTensor(one_seg).to(self.device)
                         one_seg = one_seg.view(1,1,one_seg.size(0), one_seg.size(1))
                         l = torch.FloatTensor(label_t)
@@ -490,7 +501,7 @@ class Solver(object):
 
                     convert_con = np.concatenate(convert_result, axis=1)
                     convert_con = convert_con[:, 0:content['coded_sp_norm'].shape[1]]
-                    contigu = np.ascontiguousarray(convert_con.T, dtype=np.float64)   
+                    contigu = np.ascontiguousarray(convert_con.T, dtype=np.float64)
                     decoded_sp = decode_spectral_envelope(contigu, SAMPLE_RATE, fft_size=FFTSIZE)
                     f0_converted = norm.pitch_conversion(f0, speaker, target)
                     wav = synthesize(f0_converted, decoded_sp, ap, SAMPLE_RATE)
@@ -498,9 +509,9 @@ class Solver(object):
                     name = f'{speaker}-{target}_iter{self.test_iters}_{filename}'
                     path = os.path.join(self.result_dir, name)
                     print(f'[保存]:{path}')
-                    librosa.output.write_wav(path, wav, SAMPLE_RATE)            
+                    librosa.output.write_wav(path, wav, SAMPLE_RATE)
 
-    
+
 # 如果执行模式为main就跳过这个文件
 if __name__ == '__main__':
     pass
