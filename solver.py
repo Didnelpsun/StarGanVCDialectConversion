@@ -292,11 +292,11 @@ class Solver(object):
                 x_fake = self.G(x_real, label_trg)
                 #  判别生成样本与目标标签
                 g_out_src = self.D(x_fake, label_trg)
-                # 将生成与目标标签的损失与相同大小纯1张量计算交叉熵得到虚假损失
+                # 将生成与目标标签的损失与相同大小纯1张量计算交叉熵得到生成G损失
                 g_loss_fake = F.binary_cross_entropy_with_logits(input=g_out_src, target=torch.ones_like(g_out_src, dtype=torch.float))
                 # 得到真实样本通过域分类器得到的类别
                 out_cls = self.C(x_real)
-                # 计算C计算结果与输入的类别的损失
+                # 计算C计算类别与输入的类别的交叉熵损失即G的分类损失
                 g_loss_cls = CELoss(input=out_cls, target=speaker_idx_org)
 
                 # 目标至源域
@@ -310,7 +310,7 @@ class Solver(object):
                 # 通过真实样本与源标签生成，按道理也是生成x_real
                 x_fake_iden = self.G(x_real, label_org)
                 # 利用L1损失函数计算
-                id_loss = F.l1_loss(x_fake_iden, x_real )
+                id_loss = F.l1_loss(x_fake_iden, x_real)
 
                 # 后退和优化
                 # 得到生成器的总体损失函数
