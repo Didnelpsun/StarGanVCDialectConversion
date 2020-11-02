@@ -84,6 +84,7 @@ class Generator(nn.Module):
         # .view方法返回具有相同数据但大小不同的新张量，即改变原有数据的维度上的大小
         # 这里改成四维数组，第一维为原第一维大小，第二维为原第二维大小，第三四维全部为1
         c = c.view(c.size(0), c.size(1), 1, 1)
+
         # tensor.repeat在张量的某个维度上复制
         # 如果参数与源数据相同维数就直接对应相乘，如果不同就进行平铺操作，从高维处增加多个新的维数并相乘，默认为1
         c1 = c.repeat(1, 1, x.size(2), x.size(3))
@@ -151,7 +152,7 @@ class Discriminator(nn.Module):
         x = self.conv(x)
 
         x = self.pool(x)
-        # 再利用torch.squeeze将x中所有维数大小为1的维数全部去掉
+        # 再利用torch.squeeze将x中所有该维数数据大小为1的维数全部去掉
         x = torch.squeeze(x)
         # torch.tanh函数是将输入利用tanh函数进行变换
         x = torch.tanh(x)
